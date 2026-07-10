@@ -89,6 +89,18 @@
   .bulletin-section{margin-top:22px;padding-top:22px;border-top:1.5px dashed var(--line);}
   .bulletin-title{font-family:'Sora',sans-serif;font-weight:700;font-size:15px;color:var(--navy);margin-bottom:14px;}
   .highlight-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px;}
+  .modal-overlay{position:fixed;inset:0;background:rgba(13,31,60,0.45);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px;}
+  .modal-overlay.hidden{display:none !important;}
+  .modal-box{background:white;border-radius:20px;padding:28px 30px;max-width:440px;width:100%;box-shadow:0 12px 40px rgba(13,31,60,0.25);}
+  .modal-title{font-family:'Sora',sans-serif;font-weight:700;font-size:18px;color:var(--navy);margin-bottom:16px;}
+  .modal-warning{background:rgba(244,137,74,0.08);border:1px solid rgba(244,137,74,0.25);border-radius:12px;padding:12px 14px;font-size:13.5px;color:var(--navy-2);margin-bottom:16px;line-height:1.5;}
+  .modal-recap{font-size:13.5px;color:#5c6178;margin-bottom:10px;line-height:1.5;}
+  .modal-recap b{color:var(--navy);}
+  .modal-eval-list{list-style:none;padding:0;margin:0 0 20px;max-height:160px;overflow-y:auto;}
+  .modal-eval-list li{font-size:13.5px;color:var(--ink);padding:9px 12px;background:var(--cream);border-radius:8px;margin-bottom:6px;}
+  .modal-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;}
+  .btn-danger{background:var(--rose-2);color:white;}
+  .btn-danger:hover{background:var(--rose);}
   .highlight-card{border-radius:16px;padding:18px 20px;border:1.5px solid var(--line);}
   .highlight-card.best{background:rgba(28,138,90,0.06);border-color:rgba(28,138,90,0.25);}
   .highlight-card.difficulty{background:rgba(232,25,75,0.05);border-color:rgba(232,25,75,0.2);}
@@ -217,6 +229,17 @@
       <div class="progress-label" id="studentProgressLabel"></div>
     </div>
     <div id="studentSubjects"></div>
+  </div>
+
+  <div class="modal-overlay hidden" id="deleteCatModalOverlay">
+    <div class="modal-box">
+      <div class="modal-title">Supprimer cette catégorie ?</div>
+      <div id="deleteCatModalBody"></div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="closeDeleteCatModal()">Annuler</button>
+        <button class="btn btn-danger" onclick="confirmDeleteCategory()">Supprimer</button>
+      </div>
+    </div>
   </div>
 </div>
 
@@ -380,16 +403,40 @@ function saveCategoryEdit(catId){
   renderEvals();
 }
 
+let pendingDeleteCategoryId = null;
+
 function deleteCategory(catId){
   const c = CLASSES.find(x=>x.id===currentClassId);
   const cat = c.categories.find(x=>x.id===catId);
   const evalsInCat = c.evaluations.filter(ev=>ev.categoryId===catId);
-  const message = evalsInCat.length > 0
-    ? `Supprimer la catégorie "${cat.nom}" ? Les ${evalsInCat.length} évaluation(s) qu'elle contient seront conservées, mais passeront en "Non classées".`
-    : `Supprimer la catégorie "${cat.nom}" ?`;
-  if(!confirm(message)) return;
-  evalsInCat.forEach(ev => ev.categoryId = null);
+  pendingDeleteCategoryId = catId;
+
+  const modalBody = document.getElementById('deleteCatModalBody');
+  if(evalsInCat.length > 0){
+    modalBody.innerHTML = `
+      <div class="modal-warning">⚠️ Cette catégorie contient encore des évaluations. Elles seront conservées, mais basculeront en "Non classées" — elles resteront visibles et faisables par les apprenants.</div>
+      <div class="modal-recap">Catégorie concernée : <b>${cat.nom}</b></div>
+      <div class="modal-recap">${evalsInCat.length} évaluation(s) actuellement rangée(s) dedans :</div>
+      <ul class="modal-eval-list">${evalsInCat.map(ev=>`<li>${ev.nom}</li>`).join('')}</ul>
+    `;
+  } else {
+    modalBody.innerHTML = `<div class="modal-recap">La catégorie <b>${cat.nom}</b> ne contient aucune évaluation. Elle peut être supprimée sans impact sur les apprenants.</div>`;
+  }
+  document.getElementById('deleteCatModalOverlay').classList.remove('hidden');
+}
+
+function closeDeleteCatModal(){
+  document.getElementById('deleteCatModalOverlay').classList.add('hidden');
+  pendingDeleteCategoryId = null;
+}
+
+function confirmDeleteCategory(){
+  if(!pendingDeleteCategoryId) return;
+  const c = CLASSES.find(x=>x.id===currentClassId);
+  const catId = pendingDeleteCategoryId;
+  c.evaluations.forEach(ev=>{ if(ev.categoryId===catId) ev.categoryId = null; });
   c.categories = c.categories.filter(x=>x.id!==catId);
+  closeDeleteCatModal();
   renderCategories();
   renderEvals();
 }
