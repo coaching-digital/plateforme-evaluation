@@ -38,6 +38,7 @@
   .class-card h3{font-size:19px;color:var(--navy);margin:0 0 12px;}
   .stat-pills{display:flex;gap:10px;flex-wrap:wrap;}
   .pill{background:rgba(232,25,75,0.07);color:var(--navy-2);font-size:13px;font-weight:600;padding:8px 14px;border-radius:999px;}
+  .pill-clickable{cursor:pointer;user-select:none;}
   .pill b{color:var(--rose-2);}
   .btn{font-family:'Sora', sans-serif;font-weight:700;font-size:14px;border:none;border-radius:12px;padding:12px 22px;cursor:pointer;transition:transform .15s ease;}
   .btn:active{transform:scale(0.98);}
@@ -127,7 +128,30 @@
   .eval-badge{display:inline-block;font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:6px;background:rgba(13,31,60,0.06);color:var(--navy-2);margin-left:8px;}
   .eval-badge.semester-s1{background:rgba(244,137,74,0.12);color:var(--orange);}
   .eval-badge.muted{background:transparent;color:#c9ccd6;font-weight:600;}
+  .eval-badge.tag-category{background:rgba(13,31,60,0.06);color:var(--navy-2);}
+  .eval-badge.tag-theme{background:rgba(244,137,74,0.10);color:var(--orange);text-transform:uppercase;font-size:10px;letter-spacing:0.03em;display:block;width:fit-content;margin:0 0 8px;}
+  .eval-badge.tag-critere{background:rgba(232,25,75,0.07);color:var(--rose-2);display:block;width:fit-content;margin-top:8px;}
+  .eval-badge.tag-count{display:block;width:fit-content;margin:8px 0 0;}
+  .competence-title{font-family:'Sora',sans-serif;font-weight:700;font-size:14.5px;color:var(--navy);}
+  .theme-accordion{border:1.5px solid var(--line);border-radius:16px;padding:16px 18px;margin-bottom:16px;}
+  .theme-accordion-header{display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;user-select:none;}
+  .theme-accordion-body{margin-top:16px;}
+  .theme-accordion-body.hidden{display:none;margin-top:0;}
+  .theme-accordion-body .category-block:last-child{margin-bottom:0;}
+  .criteres-toggle{font-size:12px;font-weight:700;color:var(--rose-2);cursor:pointer;margin-top:8px;display:inline-block;user-select:none;}
+  .criteres-list{list-style:none;padding:0;margin:10px 0 0;}
+  .criteres-list li{font-size:12.5px;color:#5c6178;padding:7px 10px;background:var(--cream);border-radius:8px;margin-bottom:5px;line-height:1.5;}
+  .criteres-list.hidden{display:none;}
+  .params-theme-block{margin-bottom:20px;}
+  .params-theme-header{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:12px;padding-bottom:10px;border-bottom:1.5px dashed var(--line);}
+  .params-theme-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--orange);margin-bottom:10px;font-family:'Sora',sans-serif;}
+  .params-comp-row{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border:1.5px solid var(--line);border-radius:14px;margin-bottom:10px;gap:14px;flex-wrap:wrap;}
+  .params-comp-name{font-size:14px;font-weight:600;color:var(--navy);}
+  .params-comp-count{font-size:12px;color:#8a8fa3;margin-top:2px;}
   .filter-pill-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+  .eval-menu-btn{width:100%;padding:16px;margin-bottom:10px;}
+  .btn-rose-active{background:rgba(232,25,75,0.07) !important;color:var(--rose-2) !important;border-color:rgba(232,25,75,0.2) !important;}
+  .btn-rose-active:hover{background:rgba(232,25,75,0.13) !important;}
   .posture-grid{border:1.5px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:16px;}
   .posture-row{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-top:1px solid var(--line);gap:10px;flex-wrap:wrap;}
   .posture-row:first-child{border-top:none;}
@@ -203,31 +227,25 @@
       <div class="tab active" data-tab="evals" onclick="switchTab('evals')">Évaluations</div>
       <div class="tab" data-tab="stats" onclick="switchTab('stats')">Statistiques &amp; notes</div>
       <div class="tab" data-tab="students" onclick="switchTab('students')">Apprenants</div>
+      <div class="tab" data-tab="params" onclick="switchTab('params')">Paramètres</div>
+    </div>
+
+    <div id="tabParams" class="card hidden">
+      <div class="section-label">Compétences du référentiel actives pour cette classe</div>
+      <p style="font-size:13px;color:#8a8fa3;margin:-6px 0 18px;line-height:1.5;">Active une compétence quand tu commences à la travailler avec cette promo. Une fois activée, elle apparaît dans l'onglet Évaluations et côté apprenant. La désactiver ne supprime rien : l'historique des notes reste utilisé dans le bilan.</p>
+      <div id="paramsCompetencesList"></div>
     </div>
 
     <div id="tabEvals">
-      <div class="card">
-        <div class="section-label">Catégories de cette classe</div>
-        <div id="categoryList"></div>
-        <div class="add-toggle-btn" onclick="toggleForm('categoryForm')">+ Nouvelle catégorie</div>
-        <div class="inline-form hidden" id="categoryForm">
-          <input type="text" id="newCategoryName" placeholder="Nom de la catégorie — ex : Bloc 2 - Relation client à distance">
-          <div class="desc-compound">
-            <span class="prefix">Ce module évalue ta capacité à</span>
-            <textarea id="newCategoryDescContinuation" placeholder="…complète la phrase (ex : cartographier un parcours client...)"></textarea>
-          </div>
-          <button class="btn btn-primary btn-sm" onclick="addCategory()">Créer la catégorie</button>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="section-label">Évaluations par catégorie</div>
+      <button class="btn btn-outline eval-menu-btn" id="btn-evalsByCategorySection" onclick="toggleEvalMenuSection('evalsByCategorySection', this)">Évaluations par compétences</button>
+      <div class="card hidden" id="evalsByCategorySection">
+        <div class="section-label">Évaluations par compétence</div>
         <div id="evalRows"></div>
         <div class="add-toggle-btn" onclick="toggleForm('evalForm')">+ Ajouter une évaluation</div>
         <div class="inline-form hidden" id="evalForm">
           <div class="form-row">
             <input type="text" id="newEvalName" placeholder="Nom de l'évaluation">
-            <select id="newEvalCategory"></select>
+            <select id="newEvalCompetence"></select>
           </div>
           <div class="form-row">
             <input type="number" id="newEvalCoef" placeholder="Coefficient" min="0.5" step="0.5" value="1">
@@ -235,6 +253,24 @@
           </div>
           <button class="btn btn-primary btn-sm" onclick="addEvaluation()">Ajouter l'évaluation</button>
         </div>
+      </div>
+
+      <button class="btn btn-outline eval-menu-btn" id="btn-semesterS1Section" onclick="toggleEvalMenuSection('semesterS1Section', this)">Évaluations Semestre 1</button>
+      <div class="card hidden" id="semesterS1Section">
+        <div class="bulletin-header-row">
+          <div class="section-label" style="margin-bottom:0;">Évaluations — Semestre 1</div>
+          <button class="btn btn-outline btn-sm" onclick="exportSemesterRecapPDF('s1')">Exporter en PDF</button>
+        </div>
+        <div id="semesterS1RecapBody"></div>
+      </div>
+
+      <button class="btn btn-outline eval-menu-btn" id="btn-semesterS2Section" onclick="toggleEvalMenuSection('semesterS2Section', this)">Évaluations Semestre 2</button>
+      <div class="card hidden" id="semesterS2Section">
+        <div class="bulletin-header-row">
+          <div class="section-label" style="margin-bottom:0;">Évaluations — Semestre 2</div>
+          <button class="btn btn-outline btn-sm" onclick="exportSemesterRecapPDF('s2')">Exporter en PDF</button>
+        </div>
+        <div id="semesterS2RecapBody"></div>
       </div>
     </div>
 
@@ -273,17 +309,6 @@
       <div class="progress-label" id="studentProgressLabel"></div>
     </div>
     <div id="studentSubjects"></div>
-  </div>
-
-  <div class="modal-overlay hidden" id="deleteCatModalOverlay">
-    <div class="modal-box">
-      <div class="modal-title">Supprimer cette catégorie ?</div>
-      <div id="deleteCatModalBody"></div>
-      <div class="modal-actions">
-        <button class="btn btn-outline" onclick="closeDeleteCatModal()">Annuler</button>
-        <button class="btn btn-danger" onclick="confirmDeleteCategory()">Supprimer</button>
-      </div>
-    </div>
   </div>
 
   <div class="modal-overlay hidden" id="studentDetailModalOverlay">
@@ -325,6 +350,7 @@
       </div>
     </div>
   </div>
+
 </div>
 
 <script>
@@ -333,19 +359,18 @@ let CLASSES = [
     id:"ndrc1",
     name:"BTS NDRC — 1ère année",
     codePromo:"NDRC1-2026",
-    categories:[
-      {id:"c1", nom:"Bloc 2 — Relation client à distance", description:"Ce module évalue ta capacité à cartographier un parcours client et à concevoir des scénarios de marketing automation cohérents avec la stratégie commerciale."},
-      {id:"c2", nom:"Bloc 1 — Cibler et prospecter", description:"Ce module évalue ta capacité à identifier une cible commerciale pertinente et à construire une démarche de prospection adaptée."},
-    ],
+    filiereId:"ndrc",
+    themesActifs:["th1","th2"],
+    competencesActives:["comp1","comp7"],
     students:[
       {id:"s1", prenom:"Camille", nom:"Dupont", code:"CAM-482"},
       {id:"s2", prenom:"Lucas", nom:"Martin", code:"LUC-917"},
       {id:"s3", prenom:"Inès", nom:"Bernard", code:""},
     ],
     evaluations:[
-      {id:"e1", categoryId:"c1", nom:"QCM Customer Journey Mapping", active:true, coefficient:1, date:"2025-10-15"},
-      {id:"e2", categoryId:"c1", nom:"QCM Marketing Automation", active:false, coefficient:1, date:null},
-      {id:"e3", categoryId:"c2", nom:"Étude de cas prospection B2B", active:true, coefficient:2, date:"2026-03-10"},
+      {id:"e1", competenceId:"comp1", nom:"QCM Customer Journey Mapping", active:true, coefficient:1, date:"2025-10-15"},
+      {id:"e2", competenceId:"comp1", nom:"QCM Marketing Automation", active:false, coefficient:1, date:null},
+      {id:"e3", competenceId:"comp7", nom:"Étude de cas prospection B2B", active:true, coefficient:2, date:"2026-03-10"},
     ],
     grades:{
       "s1":{"e1":16.5,"e2":null,"e3":14},
@@ -357,16 +382,16 @@ let CLASSES = [
     id:"ndrc2",
     name:"BTS NDRC — 2ème année",
     codePromo:"NDRC2-2026",
-    categories:[
-      {id:"c3", nom:"Bloc 3 — Manager l'équipe commerciale", description:"Ce module évalue ta capacité à animer, motiver et arbitrer au sein d'une équipe commerciale."},
-    ],
+    filiereId:"ndrc",
+    themesActifs:["th1"],
+    competencesActives:["comp2"],
     students:[
       {id:"s4", prenom:"Nora", nom:"Haddad", code:"NOR-205"},
       {id:"s5", prenom:"Tom", nom:"Petit", code:"TOM-663"},
     ],
     evaluations:[
-      {id:"e4", categoryId:"c3", nom:"Cas managérial : conflit d'équipe", active:true, coefficient:2, date:"2025-11-05"},
-      {id:"e5", categoryId:"c3", nom:"QCM techniques de management", active:true, coefficient:1, date:"2026-04-20"},
+      {id:"e4", competenceId:"comp2", nom:"Cas managérial : conflit d'équipe", active:true, coefficient:2, date:"2025-11-05"},
+      {id:"e5", competenceId:"comp2", nom:"QCM techniques de management", active:true, coefficient:1, date:"2026-04-20"},
     ],
     grades:{
       "s4":{"e4":15,"e5":13.5},
@@ -375,7 +400,154 @@ let CLASSES = [
   }
 ];
 
-const CATEGORY_DESC_PREFIX = "Ce module évalue ta capacité à ";
+// ---------- Référentiels de compétences (par filière) ----------
+// Copie embarquée du fichier referentiels/ndrc.json, utilisée par défaut.
+// Au chargement, on tente de récupérer la version la plus à jour depuis le fichier
+// du dépôt (utile si tu modifies le référentiel sans republier tout formateur/index.html) ;
+// si ça échoue (ouverture en local, fichier introuvable...), on garde cette copie embarquée.
+let REFERENTIELS = {
+  ndrc: {
+    id:"ndrc", nom:"BTS NDRC",
+    blocs:[
+      { id:"bloc2", nom:"Bloc 2 — Relation client à distance et digitalisation", themes:[
+        { id:"th1", nom:"Maîtriser la relation client omnicanale", description:"Ce thème regroupe les compétences liées à la prospection, la vente et l'accompagnement client à distance, tous canaux confondus — le socle d'une relation client fluide et réactive au service du développement commercial.", competences:[
+          { id:"comp1", nom:"Prospecter via un centre de relation client", criteres:[
+            {id:"cr1", label:"Comprendre l'organisation d'un centre de relation client à distance"},
+            {id:"cr2", label:"Respecter la réglementation sur la collecte des données"},
+            {id:"cr3", label:"Maîtriser les outils de la relation clients à distance"},
+            {id:"cr4", label:"Respecter la réglementation sur la démarche de prospection téléphonique"},
+            {id:"cr5", label:"Structurer et qualifier une base de données"},
+            {id:"cr6", label:"Segmenter et scorer une base de données"} ]},
+          { id:"comp2", nom:"Vendre à distance", criteres:[
+            {id:"cr7", label:"Mettre en place une campagne de prospection téléphonique"},
+            {id:"cr8", label:"Mener une campagne d'appels sortants"},
+            {id:"cr9", label:"Rédiger des scripts téléphoniques efficaces"},
+            {id:"cr10", label:"Négocier par téléphone"},
+            {id:"cr11", label:"Maîtriser les indicateurs pour suivre une campagne d'appels sortants"} ]},
+          { id:"comp3", nom:"Mettre en place un service client omnicanal", criteres:[
+            {id:"cr12", label:"Favoriser une expérience client omnicanale"},
+            {id:"cr13", label:"Assurer un service client omnicanal"},
+            {id:"cr14", label:"Prendre en compte le contexte juridique des appels entrants"},
+            {id:"cr15", label:"Optimiser le traitement des requêtes clients par téléphone"},
+            {id:"cr16", label:"Optimiser le traitement des requêtes clients par écrit"} ]},
+          { id:"comp4", nom:"Accompagner, conseiller et traiter les demandes clients à distance", criteres:[
+            {id:"cr17", label:"Optimiser la réponse aux appels entrants"},
+            {id:"cr18", label:"Conseiller et répondre aux demandes clients par téléphone"},
+            {id:"cr19", label:"Répondre aux demandes clients par écrit"},
+            {id:"cr20", label:"Gérer et traiter les réclamations clients"},
+            {id:"cr21", label:"Évaluer la qualité de la gestion des appels entrants"} ]},
+          { id:"comp5", nom:"Encadrer et animer une équipe de téléacteurs", criteres:[
+            {id:"cr22", label:"Recruter une équipe de téléacteurs"},
+            {id:"cr23", label:"Former les téléacteurs"},
+            {id:"cr24", label:"Maîtriser le droit du travail des téléacteurs"},
+            {id:"cr25", label:"Organiser et suivre l'activité des téléacteurs"},
+            {id:"cr26", label:"Motiver et animer une équipe de téléacteurs"} ]},
+          { id:"comp6", nom:"Apprécier la performance et la qualité du service clients", criteres:[
+            {id:"cr27", label:"Évaluer la performance et la qualité du service client"},
+            {id:"cr28", label:"Évaluer la satisfaction client"},
+            {id:"cr29", label:"Mettre en place des enquêtes de satisfaction client"},
+            {id:"cr30", label:"Évaluer la performance du service de relation client à distance"} ]}
+        ]},
+        { id:"th2", nom:"Animer la relation client à distance", description:"Ce thème couvre la stratégie de communication digitale de l'entreprise : sa capacité à créer, animer et faire rayonner sa présence en ligne auprès de ses clients et prospects.", competences:[
+          { id:"comp7", nom:"Définir une stratégie de communication digitale", criteres:[
+            {id:"cr31", label:"Maîtriser l'évolution de la communication et l'impact du digital"},
+            {id:"cr32", label:"Mettre en place une stratégie de communication digitale"},
+            {id:"cr33", label:"Maîtriser le marketing de contenu"},
+            {id:"cr34", label:"Rédiger sur le web en respectant les règles"},
+            {id:"cr35", label:"Mettre en place une stratégie d'emailing"},
+            {id:"cr36", label:"Créer des emails pertinents pour le développement commercial"},
+            {id:"cr37", label:"Respecter la réglementation liée à l'envoi d'emails"},
+            {id:"cr38", label:"Comprendre le principe de marketing automation"},
+            {id:"cr39", label:"Construire le funnel de vente digital de l'entreprise"} ]},
+          { id:"comp8", nom:"Maîtriser la communication sur les médias sociaux", criteres:[
+            {id:"cr40", label:"Maîtriser les différents médias sociaux"},
+            {id:"cr41", label:"Maîtriser les enjeux d'une communauté en ligne"},
+            {id:"cr42", label:"Créer et rédiger des articles de blog"},
+            {id:"cr43", label:"Maîtriser la réglementation sur les médias sociaux"} ]},
+          { id:"comp9", nom:"Animer des communautés sur les réseaux sociaux", criteres:[
+            {id:"cr44", label:"Mettre en place une stratégie social media"},
+            {id:"cr45", label:"Maîtriser les outils de planification de contenu sur les réseaux sociaux"},
+            {id:"cr46", label:"Rédiger du contenu pour les réseaux sociaux"},
+            {id:"cr47", label:"Collecter des données et prospecter grâce aux réseaux sociaux"},
+            {id:"cr48", label:"Analyser les indicateurs de performances sur les réseaux sociaux"} ]},
+          { id:"comp10", nom:"Gérer et renforcer la réputation en ligne", criteres:[
+            {id:"cr49", label:"Maîtriser les enjeux de la réputation en ligne pour une entreprise"},
+            {id:"cr50", label:"Gérer la réputation en ligne de l'entreprise"},
+            {id:"cr51", label:"Gérer le bad-buzz"} ]},
+          { id:"comp11", nom:"Optimiser la structure d'un site vitrine", criteres:[
+            {id:"cr52", label:"Définir la structure et les contenus d'un site internet"},
+            {id:"cr53", label:"Définir l'ergonomie et le graphisme d'un site"},
+            {id:"cr54", label:"Construire les pages d'un site"},
+            {id:"cr55", label:"Rédiger les mentions légales sur un site"},
+            {id:"cr56", label:"Créer un site vitrine sur WordPress"} ]},
+          { id:"comp12", nom:"Suivre et optimiser le référencement d'un site", criteres:[
+            {id:"cr57", label:"Comprendre le principe de référencement web"},
+            {id:"cr58", label:"Définir une stratégie de référencement web"},
+            {id:"cr59", label:"Gérer le référencement naturel d'un site sur WordPress"},
+            {id:"cr60", label:"Mettre en place des campagnes de référencement payant"},
+            {id:"cr61", label:"Améliorer l'expérience utilisateur d'un site"},
+            {id:"cr62", label:"Mettre en place une stratégie de netlinking"} ]},
+          { id:"comp13", nom:"Animer un site vitrine et évaluer son e-trafic", criteres:[
+            {id:"cr63", label:"Analyser et comprendre le trafic d'un site"},
+            {id:"cr64", label:"Optimiser la page d'accueil d'un site internet"},
+            {id:"cr65", label:"Créer des pages d'atterrissage"},
+            {id:"cr66", label:"Créer des animations sur le site vitrine"} ]}
+        ]},
+        { id:"th3", nom:"Développer la relation en e-commerce", description:"Ce thème porte sur la performance commerciale d'un site marchand : son optimisation, son animation et le suivi de ses indicateurs pour développer les ventes en ligne de l'entreprise.", competences:[
+          { id:"comp14", nom:"Optimiser un site de e-commerce", criteres:[
+            {id:"cr67", label:"Optimiser l'ergonomie d'un site marchand"},
+            {id:"cr68", label:"Maîtriser les enjeux e-commerciaux pour une entreprise"},
+            {id:"cr69", label:"Suivre et optimiser le processus de vente e-commerce"},
+            {id:"cr70", label:"Créer une expérience d'achat fluide"},
+            {id:"cr71", label:"Gérer la reconquête client en e-commerce"} ]},
+          { id:"comp15", nom:"Animer un site e-commerce", criteres:[
+            {id:"cr72", label:"Mettre en place des animations commerciales sur le site marchand"},
+            {id:"cr73", label:"Définir la stratégie de contenu promotionnel"},
+            {id:"cr74", label:"Promouvoir les animations commerciales e-commerce"},
+            {id:"cr75", label:"Créer un site marchand avec PrestaShop"} ]},
+          { id:"comp16", nom:"Diagnostiquer l'activité du e-commerce", criteres:[
+            {id:"cr76", label:"Maîtriser les indicateurs d'évaluation d'un site marchand"},
+            {id:"cr77", label:"Définir les actions correctives de gestion du site marchand"} ]}
+        ]}
+      ]}
+    ]
+  }
+};
+
+// Essaie de charger la version la plus à jour depuis le dépôt (chemin relatif : formateur/ -> ../referentiels/)
+fetch('../referentiels/ndrc.json').then(r=>{ if(!r.ok) throw new Error('not ok'); return r.json(); }).then(data=>{
+  REFERENTIELS.ndrc = data;
+  if(currentClassId){ renderParams(); renderEvals(); }
+}).catch(()=>{ /* pas de serveur / fichier introuvable : on garde la copie embarquée ci-dessus */ });
+
+// ---------- Aides référentiel : à-plat thèmes > compétences pour un accès simple ----------
+function getFlatCompetences(filiereId){
+  const ref = REFERENTIELS[filiereId];
+  if(!ref) return [];
+  const list = [];
+  (ref.blocs||[]).forEach(bloc=>{
+    (bloc.themes||[]).forEach(theme=>{
+      (theme.competences||[]).forEach(comp=>{
+        list.push({...comp, themeId:theme.id, themeNom:theme.nom, themeDescription:theme.description||'', blocId:bloc.id, blocNom:bloc.nom});
+      });
+    });
+  });
+  return list;
+}
+
+function getCompetence(filiereId, competenceId){
+  return getFlatCompetences(filiereId).find(c=>c.id===competenceId) || null;
+}
+
+function getActiveCompetences(c){
+  const flat = getFlatCompetences(c.filiereId);
+  const activeThemes = c.themesActifs || [];
+  return (c.competencesActives||[])
+    .map(id=>flat.find(cp=>cp.id===id))
+    .filter(Boolean)
+    .filter(cp=>activeThemes.includes(cp.themeId));
+}
+
 let currentBulletinSemesterFilter = null;
 
 // Semestres fixés une fois pour toutes, valables chaque année scolaire, pour toutes les classes :
@@ -406,6 +578,7 @@ function weightedAverage(items){
 let currentClassId = null;
 let navStack = ['home'];
 let expandedCategories = new Set();
+let expandedThemes = new Set();
 
 function renderHome(){
   const list = document.getElementById('classList');
@@ -442,7 +615,12 @@ function openClass(id){
   const c = CLASSES.find(x=>x.id===id);
   document.getElementById('classTitle').textContent = c.name;
   document.getElementById('classSub').textContent = 'Code promo : ' + c.codePromo;
-  renderCategories();
+  ['evalsByCategorySection','semesterS1Section','semesterS2Section'].forEach(sectionId=>{
+    document.getElementById(sectionId).classList.add('hidden');
+    const btn = document.getElementById('btn-' + sectionId);
+    if(btn){ btn.classList.add('btn-outline'); btn.classList.remove('btn-rose-active'); }
+  });
+  renderParams();
   renderEvals();
   renderStats();
   renderStudents();
@@ -454,6 +632,7 @@ function switchTab(tab){
   document.getElementById('tabEvals').classList.toggle('hidden', tab!=='evals');
   document.getElementById('tabStats').classList.toggle('hidden', tab!=='stats');
   document.getElementById('tabStudents').classList.toggle('hidden', tab!=='students');
+  document.getElementById('tabParams').classList.toggle('hidden', tab!=='params');
   if(tab==='stats'){
     document.getElementById('bulletinSection').classList.add('hidden');
     currentBulletinSemesterFilter = null;
@@ -465,166 +644,234 @@ function toggleForm(id){
   document.getElementById(id).classList.toggle('hidden');
 }
 
-function renderCategories(){
-  const c = CLASSES.find(x=>x.id===currentClassId);
-  const list = document.getElementById('categoryList');
-  list.innerHTML = '';
-  if(c.categories.length===0){
-    list.innerHTML = '<p style="font-size:13px;color:#8a8fa3;">Aucune catégorie pour l\'instant — crées-en une pour commencer à ranger tes évaluations.</p>';
+function toggleEvalMenuSection(sectionId, btnEl){
+  const section = document.getElementById(sectionId);
+  section.classList.toggle('hidden');
+  const isOpenNow = !section.classList.contains('hidden');
+  const btn = btnEl || document.getElementById('btn-' + sectionId);
+  if(btn){
+    btn.classList.toggle('btn-outline', !isOpenNow);
+    btn.classList.toggle('btn-rose-active', isOpenNow);
   }
-  c.categories.forEach(cat=>{
-    const div = document.createElement('div');
-    div.className = 'category-block';
-    div.innerHTML = `
-      <div class="category-head">
+}
+
+function renderSemesterRecap(sem){
+  const c = CLASSES.find(x=>x.id===currentClassId);
+  const body = document.getElementById('semesterS' + sem.slice(1) + 'RecapBody');
+  const evalsInSem = c.evaluations.filter(ev => getEvalSemester(c, ev) === sem);
+
+  if(evalsInSem.length === 0){
+    body.innerHTML = '<p style="font-size:13px;color:#8a8fa3;">Aucune évaluation datée sur ce semestre pour l\'instant.</p>';
+    return;
+  }
+  body.innerHTML = evalsInSem.map(ev=>{
+    const comp = getCompetence(c.filiereId, ev.competenceId);
+    const compLabel = comp ? comp.nom : 'Non rattachée';
+    return `
+      <div style="padding:14px 4px;border-top:1px solid var(--line);">
+        <div style="font-weight:700;color:var(--navy);font-size:14.5px;margin-bottom:8px;">${ev.nom}</div>
         <div>
-          <div class="category-name">${cat.nom}</div>
-          <div class="category-desc">${cat.description || '<i style="color:#c9ccd6;">Pas encore de description des compétences évaluées.</i>'}</div>
-        </div>
-        <div style="display:flex;gap:8px;flex-shrink:0;">
-          <button class="btn btn-outline btn-sm" onclick="toggleCategoryEdit('${cat.id}')">Modifier</button>
-          <button class="btn btn-outline btn-sm" style="color:var(--rose-2);border-color:rgba(232,25,75,0.25);" onclick="deleteCategory('${cat.id}')">Supprimer</button>
-        </div>
-      </div>
-      <div class="inline-form hidden" id="catEditForm-${cat.id}">
-        <input type="text" id="catEditName-${cat.id}" value="${cat.nom.replace(/"/g,'&quot;')}" placeholder="Nom de la catégorie">
-        <div class="desc-compound">
-          <span class="prefix">Ce module évalue ta capacité à</span>
-          <textarea id="catEditDesc-${cat.id}" placeholder="…complète la phrase">${(cat.description || '').startsWith(CATEGORY_DESC_PREFIX) ? cat.description.slice(CATEGORY_DESC_PREFIX.length) : (cat.description || '')}</textarea>
-        </div>
-        <div style="display:flex;gap:8px;">
-          <button class="btn btn-primary btn-sm" onclick="saveCategoryEdit('${cat.id}')">Enregistrer</button>
-          <button class="btn btn-outline btn-sm" onclick="toggleCategoryEdit('${cat.id}')">Annuler</button>
+          <span class="eval-badge">Coef ${ev.coefficient || 1}</span>
+          <span class="eval-badge semester-s1">${formatDateFr(ev.date)} · ${sem==='s1'?'S1':'S2'}</span>
+          <span class="eval-badge tag-category">${compLabel}</span>
         </div>
       </div>
     `;
-    list.appendChild(div);
-  });
-  const select = document.getElementById('newEvalCategory');
-  select.innerHTML = c.categories.map(cat=>`<option value="${cat.id}">${cat.nom}</option>`).join('');
+  }).join('');
 }
 
-function toggleCategoryEdit(catId){
-  document.getElementById('catEditForm-' + catId).classList.toggle('hidden');
-}
-
-function saveCategoryEdit(catId){
+function exportSemesterRecapPDF(sem){
   const c = CLASSES.find(x=>x.id===currentClassId);
-  const cat = c.categories.find(x=>x.id===catId);
-  const newName = document.getElementById('catEditName-' + catId).value.trim();
-  const continuation = document.getElementById('catEditDesc-' + catId).value.trim();
-  if(!newName) return;
-  cat.nom = newName;
-  cat.description = continuation ? (CATEGORY_DESC_PREFIX + continuation) : '';
-  renderCategories();
-  renderEvals();
-}
-
-let pendingDeleteCategoryId = null;
-
-function deleteCategory(catId){
-  const c = CLASSES.find(x=>x.id===currentClassId);
-  const cat = c.categories.find(x=>x.id===catId);
-  const evalsInCat = c.evaluations.filter(ev=>ev.categoryId===catId);
-  pendingDeleteCategoryId = catId;
-
-  const modalBody = document.getElementById('deleteCatModalBody');
-  if(evalsInCat.length > 0){
-    modalBody.innerHTML = `
-      <div class="modal-warning">⚠️ Cette catégorie contient encore des évaluations. Elles seront conservées, mais basculeront en "Non classées" — elles resteront visibles et faisables par les apprenants.</div>
-      <div class="modal-recap">Catégorie concernée : <b>${cat.nom}</b></div>
-      <div class="modal-recap">${evalsInCat.length} évaluation(s) actuellement rangée(s) dedans :</div>
-      <ul class="modal-eval-list">${evalsInCat.map(ev=>`<li>${ev.nom}</li>`).join('')}</ul>
-    `;
-  } else {
-    modalBody.innerHTML = `<div class="modal-recap">La catégorie <b>${cat.nom}</b> ne contient aucune évaluation. Elle peut être supprimée sans impact sur les apprenants.</div>`;
+  const evalsInSem = c.evaluations.filter(ev => getEvalSemester(c, ev) === sem);
+  if(evalsInSem.length === 0){
+    alert("Aucune évaluation datée sur ce semestre pour l'instant — impossible de générer le PDF.");
+    return;
   }
-  document.getElementById('deleteCatModalOverlay').classList.remove('hidden');
+  const { jsPDF } = window.jspdf;
+  const semInfo = SEMESTER_LABELS[sem];
+  const doc = new jsPDF({orientation: 'landscape'});
+
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(16);
+  doc.setTextColor(0,0,0);
+  doc.text(c.name, 14, 16);
+
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(10);
+  doc.setTextColor(100,100,100);
+  doc.text('Évaluations — ' + semInfo.name + ' (' + semInfo.interval + ') — généré le ' + new Date().toLocaleDateString('fr-FR'), 14, 22);
+
+  const head = [['Évaluation', 'Compétence', 'Coefficient', 'Date']];
+  const body = evalsInSem.map(ev=>{
+    const comp = getCompetence(c.filiereId, ev.competenceId);
+    return [ev.nom, comp ? comp.nom : 'Non rattachée', String(ev.coefficient || 1), formatDateFr(ev.date)];
+  });
+
+  doc.autoTable({
+    head: head,
+    body: body,
+    startY: 30,
+    styles:{font:'helvetica', fontSize:10, textColor:[0,0,0], cellPadding:5, lineColor:[200,200,200], lineWidth:0.1},
+    headStyles:{fillColor:[240,240,240], textColor:[0,0,0], fontStyle:'bold'},
+    alternateRowStyles:{fillColor:[250,250,250]}
+  });
+
+  const safeClassName = c.name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+  doc.save('evaluations-' + safeClassName + '-' + sem + '.pdf');
 }
 
-function closeDeleteCatModal(){
-  document.getElementById('deleteCatModalOverlay').classList.add('hidden');
-  pendingDeleteCategoryId = null;
-}
-
-function confirmDeleteCategory(){
-  if(!pendingDeleteCategoryId) return;
+function renderParams(){
   const c = CLASSES.find(x=>x.id===currentClassId);
-  const catId = pendingDeleteCategoryId;
-  c.evaluations.forEach(ev=>{ if(ev.categoryId===catId) ev.categoryId = null; });
-  c.categories = c.categories.filter(x=>x.id!==catId);
-  closeDeleteCatModal();
-  renderCategories();
+  const list = document.getElementById('paramsCompetencesList');
+  const flat = getFlatCompetences(c.filiereId);
+  list.innerHTML = '';
+  if(flat.length===0){
+    list.innerHTML = '<p style="font-size:13px;color:#8a8fa3;">Aucun référentiel trouvé pour la filière de cette classe.</p>';
+    return;
+  }
+  const themeIds = [...new Set(flat.map(cp=>cp.themeId))];
+  themeIds.forEach(themeId=>{
+    const compsOfTheme = flat.filter(cp=>cp.themeId===themeId);
+    const themeNom = compsOfTheme[0].themeNom;
+    const themeActive = (c.themesActifs||[]).includes(themeId);
+    const block = document.createElement('div');
+    block.className = 'params-theme-block';
+
+    let rowsHtml = '';
+    if(themeActive){
+      compsOfTheme.forEach(cp=>{
+        const isActive = (c.competencesActives||[]).includes(cp.id);
+        const nbEvals = c.evaluations.filter(ev=>ev.competenceId===cp.id).length;
+        rowsHtml += `
+          <div class="params-comp-row">
+            <div>
+              <div class="params-comp-name">${cp.nom}</div>
+              <div class="params-comp-count">${cp.criteres.length} critère(s) de performance${nbEvals ? ' · ' + nbEvals + ' évaluation(s) déjà rattachée(s)' : ''}</div>
+            </div>
+            <div style="display:flex;align-items:center;">
+              <div class="toggle ${isActive?'on':''}" onclick="toggleCompetenceActive('${cp.id}')"><div class="knob"></div></div>
+              <div class="toggle-label">${isActive?'Active pour la classe':'Inactive'}</div>
+            </div>
+          </div>
+        `;
+      });
+    } else {
+      rowsHtml = `<p style="font-size:12.5px;color:#c9ccd6;margin:0 0 4px;">Active ce thème pour pouvoir activer ses ${compsOfTheme.length} compétence(s) une à une.</p>`;
+    }
+
+    block.innerHTML = `
+      <div class="params-theme-header">
+        <div class="params-theme-title" style="margin-bottom:0;">${themeNom}</div>
+        <div style="display:flex;align-items:center;">
+          <div class="toggle ${themeActive?'on':''}" onclick="toggleThemeActive('${themeId}')"><div class="knob"></div></div>
+          <div class="toggle-label">${themeActive?'Thème actif':'Thème inactif'}</div>
+        </div>
+      </div>
+      ${rowsHtml}
+    `;
+    list.appendChild(block);
+  });
+}
+
+function toggleThemeActive(themeId){
+  const c = CLASSES.find(x=>x.id===currentClassId);
+  if(!c.themesActifs) c.themesActifs = [];
+  const idx = c.themesActifs.indexOf(themeId);
+  if(idx === -1) c.themesActifs.push(themeId);
+  else c.themesActifs.splice(idx, 1);
+  renderParams();
   renderEvals();
 }
 
-function addCategory(){
-  const name = document.getElementById('newCategoryName').value.trim();
-  const continuation = document.getElementById('newCategoryDescContinuation').value.trim();
-  if(!name) return;
+function toggleCompetenceActive(competenceId){
   const c = CLASSES.find(x=>x.id===currentClassId);
-  const desc = continuation ? (CATEGORY_DESC_PREFIX + continuation) : '';
-  c.categories.push({id:'c'+Date.now(), nom:name, description:desc});
-  document.getElementById('newCategoryName').value = '';
-  document.getElementById('newCategoryDescContinuation').value = '';
-  document.getElementById('categoryForm').classList.add('hidden');
-  renderCategories();
+  if(!c.competencesActives) c.competencesActives = [];
+  const idx = c.competencesActives.indexOf(competenceId);
+  if(idx === -1) c.competencesActives.push(competenceId);
+  else c.competencesActives.splice(idx, 1);
+  renderParams();
   renderEvals();
 }
 
 function renderEvals(){
   const c = CLASSES.find(x=>x.id===currentClassId);
+  renderSemesterRecap('s1');
+  renderSemesterRecap('s2');
   const rows = document.getElementById('evalRows');
   rows.innerHTML = '';
-  const unclassified = c.evaluations.filter(ev=>!ev.categoryId);
+  const activeComps = getActiveCompetences(c);
 
-  if(c.categories.length===0 && unclassified.length===0){
-    rows.innerHTML = '<p style="font-size:13px;color:#8a8fa3;">Crée d\'abord une catégorie ci-dessus pour pouvoir y ranger des évaluations.</p>';
+  const select = document.getElementById('newEvalCompetence');
+  if(select){
+    select.innerHTML = activeComps.map(cp=>`<option value="${cp.id}">${cp.nom}</option>`).join('');
+  }
+
+  if(activeComps.length===0){
+    rows.innerHTML = '<p style="font-size:13px;color:#8a8fa3;">Aucune compétence active pour l\'instant — active-en une dans l\'onglet <b>Paramètres</b> pour pouvoir y rattacher des évaluations.</p>';
     return;
   }
-  c.categories.forEach(cat=>{
-    const catEvals = c.evaluations.filter(ev=>ev.categoryId===cat.id);
-    const isExpanded = expandedCategories.has(cat.id);
-    const block = document.createElement('div');
-    block.className = 'category-block';
-    let itemsHtml = '';
-    if(catEvals.length===0){
-      itemsHtml = '<p style="font-size:12.5px;color:#c9ccd6;">Aucune évaluation dans cette catégorie pour l\'instant.</p>';
-    } else {
-      catEvals.forEach(ev=>{ itemsHtml += evalRowHtml(c, ev, false); });
-    }
-    block.innerHTML = `
-      <div class="category-head category-head-clickable" onclick="toggleCategoryEvals('${cat.id}')">
-        <div>
-          <div class="category-name">${cat.nom} <span style="color:#c9ccd6;font-weight:600;">(${catEvals.length})</span></div>
-          <div class="category-desc">${cat.description || ''}</div>
-        </div>
-        <div class="category-chevron ${isExpanded?'expanded':''}">›</div>
-      </div>
-      <div class="eval-items-container ${isExpanded?'':'hidden'}" id="evalItems-${cat.id}">${itemsHtml}</div>
-    `;
-    rows.appendChild(block);
-  });
 
-  if(unclassified.length > 0){
-    const isExpanded = expandedCategories.has('__unclassified__');
-    const block = document.createElement('div');
-    block.className = 'category-block';
-    block.style.borderStyle = 'dashed';
-    let itemsHtml = '';
-    unclassified.forEach(ev=>{ itemsHtml += evalRowHtml(c, ev, true); });
-    block.innerHTML = `
-      <div class="category-head category-head-clickable" onclick="toggleCategoryEvals('__unclassified__')">
-        <div>
-          <div class="category-name">Non classées <span style="color:#c9ccd6;font-weight:600;">(${unclassified.length})</span></div>
-          <div class="category-desc">Évaluations dont la catégorie a été supprimée. Range-les dans une catégorie existante, crées-en une nouvelle directement ici, ou laisse-les ici pour l'instant — elles restent visibles et faisables par les apprenants.</div>
+  const themeIds = [...new Set(activeComps.map(cp=>cp.themeId))];
+  themeIds.forEach(themeId=>{
+    const compsOfTheme = activeComps.filter(cp=>cp.themeId===themeId);
+    const themeNom = compsOfTheme[0].themeNom;
+    const themeDescription = compsOfTheme[0].themeDescription;
+    const isThemeExpanded = expandedThemes.has(themeId);
+    const totalEvalsInTheme = compsOfTheme.reduce((sum,cp)=>sum + c.evaluations.filter(ev=>ev.competenceId===cp.id).length, 0);
+
+    let compsHtml = '';
+    compsOfTheme.forEach(comp=>{
+      const compEvals = c.evaluations.filter(ev=>ev.competenceId===comp.id);
+      const isCompExpanded = expandedCategories.has(comp.id);
+      let itemsHtml = '';
+      if(compEvals.length===0){
+        itemsHtml = '<p style="font-size:12.5px;color:#c9ccd6;">Aucune évaluation rattachée à cette compétence pour l\'instant.</p>';
+      } else {
+        compEvals.forEach(ev=>{ itemsHtml += evalRowHtml(c, ev); });
+      }
+      compsHtml += `
+        <div class="category-block">
+          <div class="category-head category-head-clickable" onclick="toggleCategoryEvals('${comp.id}')">
+            <div>
+              <div class="competence-title">${comp.nom} <span style="color:#c9ccd6;font-weight:600;">(${compEvals.length})</span></div>
+              <span class="eval-badge tag-critere pill-clickable" onclick="event.stopPropagation(); toggleCriteresList('${comp.id}')"><b>${comp.criteres.length}</b> critère(s) de performance</span>
+              <ul class="criteres-list hidden" id="criteres-${comp.id}">
+                ${comp.criteres.map(cr=>`<li>${cr.label}</li>`).join('')}
+              </ul>
+            </div>
+            <div class="category-chevron ${isCompExpanded?'expanded':''}">›</div>
+          </div>
+          <div class="eval-items-container ${isCompExpanded?'':'hidden'}" id="evalItems-${comp.id}">${itemsHtml}</div>
         </div>
-        <div class="category-chevron ${isExpanded?'expanded':''}">›</div>
+      `;
+    });
+
+    const themeBlock = document.createElement('div');
+    themeBlock.className = 'theme-accordion';
+    themeBlock.innerHTML = `
+      <div class="theme-accordion-header" onclick="toggleThemeExpand('${themeId}')">
+        <div>
+          <div class="category-name">${themeNom} <span style="color:#c9ccd6;font-weight:600;">(${totalEvalsInTheme})</span></div>
+          <div class="category-desc">${themeDescription || ''}</div>
+          <span class="eval-badge tag-count">${compsOfTheme.length} compétence(s) évaluée(s) dans ce thème</span>
+        </div>
+        <div class="category-chevron ${isThemeExpanded?'expanded':''}">›</div>
       </div>
-      <div class="eval-items-container ${isExpanded?'':'hidden'}" id="evalItems-unclassified">${itemsHtml}</div>
+      <div class="theme-accordion-body ${isThemeExpanded?'':'hidden'}">${compsHtml}</div>
     `;
-    rows.appendChild(block);
-  }
+    rows.appendChild(themeBlock);
+  });
+}
+
+function toggleThemeExpand(themeId){
+  if(expandedThemes.has(themeId)) expandedThemes.delete(themeId);
+  else expandedThemes.add(themeId);
+  renderEvals();
+}
+
+function toggleCriteresList(compId){
+  const el = document.getElementById('criteres-' + compId);
+  if(el) el.classList.toggle('hidden');
 }
 
 function evalBadgesHtml(c, ev){
@@ -641,26 +888,7 @@ function evalBadgesHtml(c, ev){
   return html;
 }
 
-function evalRowHtml(c, ev, includeReassign){
-  const reassignHtml = includeReassign ? `
-    <select id="reassign-${ev.id}" onchange="onReassignChange('${ev.id}')" style="padding:6px 10px;border:1.5px solid var(--line);border-radius:8px;font-size:12.5px;font-family:'Manrope',sans-serif;background:var(--cream);">
-      <option value="">Ranger dans...</option>
-      <option value="__new__">+ Nouvelle catégorie</option>
-      ${c.categories.map(cat=>`<option value="${cat.id}">${cat.nom}</option>`).join('')}
-    </select>
-    <button class="btn btn-outline btn-sm" onclick="reassignEval('${ev.id}')">Valider</button>
-  ` : '';
-  const newCatInlineHtml = includeReassign ? `
-    <div class="inline-form hidden" id="newCatInline-${ev.id}" style="margin-top:12px;">
-      <input type="text" id="newCatInlineName-${ev.id}" placeholder="Nom de la nouvelle catégorie">
-      <div class="desc-compound">
-        <span class="prefix">Ce module évalue ta capacité à</span>
-        <textarea id="newCatInlineDesc-${ev.id}" placeholder="…complète la phrase (optionnel)"></textarea>
-      </div>
-      <button class="btn btn-primary btn-sm" onclick="createCategoryAndAssign('${ev.id}')">Créer la catégorie et l'assigner</button>
-    </div>
-  ` : '';
-
+function evalRowHtml(c, ev){
   return `
     <div class="eval-row" style="flex-direction:column;align-items:stretch;">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;">
@@ -672,7 +900,6 @@ function evalRowHtml(c, ev, includeReassign){
           <div class="toggle ${ev.active?'on':''}" onclick="toggleEval('${ev.id}')"><div class="knob"></div></div>
           <div class="toggle-label">${ev.active?'Activé pour la classe':'Désactivé'}</div>
           <button class="btn btn-outline btn-sm" onclick="toggleEvalEdit('${ev.id}')">Modifier</button>
-          ${reassignHtml}
         </div>
       </div>
       <div class="inline-form hidden" id="evalEditForm-${ev.id}">
@@ -686,7 +913,6 @@ function evalRowHtml(c, ev, includeReassign){
           <button class="btn btn-outline btn-sm" onclick="toggleEvalEdit('${ev.id}')">Annuler</button>
         </div>
       </div>
-      ${newCatInlineHtml}
     </div>
   `;
 }
@@ -709,39 +935,9 @@ function saveEvalEdit(evalId){
   renderStats();
 }
 
-function onReassignChange(evalId){
-  const select = document.getElementById('reassign-' + evalId);
-  const inlineForm = document.getElementById('newCatInline-' + evalId);
-  inlineForm.classList.toggle('hidden', select.value !== '__new__');
-}
-
-function reassignEval(evalId){
-  const c = CLASSES.find(x=>x.id===currentClassId);
-  const select = document.getElementById('reassign-' + evalId);
-  const newCatId = select.value;
-  if(!newCatId || newCatId === '__new__') return;
-  const ev = c.evaluations.find(e=>e.id===evalId);
-  ev.categoryId = newCatId;
-  renderEvals();
-}
-
-function createCategoryAndAssign(evalId){
-  const c = CLASSES.find(x=>x.id===currentClassId);
-  const name = document.getElementById('newCatInlineName-' + evalId).value.trim();
-  const continuation = document.getElementById('newCatInlineDesc-' + evalId).value.trim();
-  if(!name) return;
-  const desc = continuation ? (CATEGORY_DESC_PREFIX + continuation) : '';
-  const newCat = {id:'c'+Date.now(), nom:name, description:desc};
-  c.categories.push(newCat);
-  const ev = c.evaluations.find(e=>e.id===evalId);
-  ev.categoryId = newCat.id;
-  renderCategories();
-  renderEvals();
-}
-
-function toggleCategoryEvals(catId){
-  if(expandedCategories.has(catId)) expandedCategories.delete(catId);
-  else expandedCategories.add(catId);
+function toggleCategoryEvals(compId){
+  if(expandedCategories.has(compId)) expandedCategories.delete(compId);
+  else expandedCategories.add(compId);
   renderEvals();
 }
 
@@ -754,13 +950,13 @@ function toggleEval(evalId){
 
 function addEvaluation(){
   const name = document.getElementById('newEvalName').value.trim();
-  const categoryId = document.getElementById('newEvalCategory').value;
+  const competenceId = document.getElementById('newEvalCompetence').value;
   const coefficient = parseFloat(document.getElementById('newEvalCoef').value) || 1;
   const date = document.getElementById('newEvalDate').value || null;
-  if(!name || !categoryId) return;
+  if(!name || !competenceId) return;
   const c = CLASSES.find(x=>x.id===currentClassId);
   const id = 'e'+Date.now();
-  c.evaluations.push({id, categoryId, nom:name, active:false, coefficient, date});
+  c.evaluations.push({id, competenceId, nom:name, active:false, coefficient, date});
   c.students.forEach(s=>{ if(!c.grades[s.id]) c.grades[s.id]={}; c.grades[s.id][id]=null; });
   document.getElementById('newEvalName').value = '';
   document.getElementById('newEvalCoef').value = '1';
@@ -1433,8 +1629,10 @@ function previewStudent(studentId){
   document.getElementById('studentPromo').textContent = c.name;
   document.getElementById('studentGreeting').textContent = 'Bonjour ' + s.prenom + ' 👋';
 
-  const total = c.evaluations.length;
-  const done = c.evaluations.filter(ev=>{
+  const activeComps = getActiveCompetences(c);
+  const visibleEvals = c.evaluations.filter(ev=>(c.competencesActives||[]).includes(ev.competenceId));
+  const total = visibleEvals.length;
+  const done = visibleEvals.filter(ev=>{
     const g = c.grades[s.id] ? c.grades[s.id][ev.id] : null;
     return g !== null && g !== undefined;
   }).length;
@@ -1444,13 +1642,13 @@ function previewStudent(studentId){
 
   const container = document.getElementById('studentSubjects');
   container.innerHTML = '';
-  c.categories.forEach(cat=>{
-    const catEvals = c.evaluations.filter(ev=>ev.categoryId===cat.id);
-    if(catEvals.length===0) return;
+  activeComps.forEach(comp=>{
+    const compEvals = c.evaluations.filter(ev=>ev.competenceId===comp.id);
+    if(compEvals.length===0) return;
     const group = document.createElement('div');
     group.className = 'subject-group';
-    let html = `<div class="subject-title">${cat.nom}</div><div class="subject-desc">${cat.description||''}</div>`;
-    catEvals.forEach(ev=>{
+    let html = `<div class="subject-title">${comp.nom}</div><ul class="criteres-list" style="margin-top:8px;">${comp.criteres.map(cr=>`<li>${cr.label}</li>`).join('')}</ul>`;
+    compEvals.forEach(ev=>{
       const g = c.grades[s.id] ? c.grades[s.id][ev.id] : null;
       const hasGrade = g !== null && g !== undefined;
       let statusHtml;
@@ -1466,28 +1664,6 @@ function previewStudent(studentId){
     group.innerHTML = html;
     container.appendChild(group);
   });
-
-  const unclassified = c.evaluations.filter(ev=>!ev.categoryId);
-  if(unclassified.length > 0){
-    const group = document.createElement('div');
-    group.className = 'subject-group';
-    let html = `<div class="subject-title">Autres évaluations</div><div class="subject-desc"></div>`;
-    unclassified.forEach(ev=>{
-      const g = c.grades[s.id] ? c.grades[s.id][ev.id] : null;
-      const hasGrade = g !== null && g !== undefined;
-      let statusHtml;
-      if(hasGrade) statusHtml = `<span class="status-tag done">Fait — ${g}/20</span>`;
-      else if(ev.active) statusHtml = `<span class="status-tag open">À faire</span>`;
-      else statusHtml = `<span class="status-tag locked">Verrouillé</span>`;
-      html += `
-        <div class="eval-card ${!ev.active && !hasGrade ? 'locked' : ''}">
-          <div class="name">${ev.nom}</div>
-          ${statusHtml}
-        </div>`;
-    });
-    group.innerHTML = html;
-    container.appendChild(group);
-  }
 }
 
 function goBack(){
