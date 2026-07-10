@@ -6,6 +6,8 @@
 <title>Plateforme d'évaluation — Maquette</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
 <style>
   :root{
     --navy:#0D1F3C;
@@ -79,6 +81,25 @@
   .grade.bad{color:var(--rose-2);}
   .grade.pending{color:#c9ccd6;}
   .table-scroll{overflow-x:auto;}
+  .stats-overview{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:22px;}
+  .stat-module{background:var(--cream);border:1.5px solid var(--line);border-radius:16px;padding:20px 16px;text-align:center;}
+  .stat-module .stat-num{font-family:'Sora',sans-serif;font-weight:800;font-size:28px;color:var(--navy);}
+  .stat-module .stat-label{font-size:12px;color:#8a8fa3;margin-top:4px;line-height:1.4;}
+  .bulletin-toggle-row{text-align:center;padding-top:6px;}
+  .bulletin-section{margin-top:22px;padding-top:22px;border-top:1.5px dashed var(--line);}
+  .bulletin-title{font-family:'Sora',sans-serif;font-weight:700;font-size:15px;color:var(--navy);margin-bottom:14px;}
+  .highlight-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px;}
+  .highlight-card{border-radius:16px;padding:18px 20px;border:1.5px solid var(--line);}
+  .highlight-card.best{background:rgba(28,138,90,0.06);border-color:rgba(28,138,90,0.25);}
+  .highlight-card.difficulty{background:rgba(232,25,75,0.05);border-color:rgba(232,25,75,0.2);}
+  .highlight-label{font-size:11px;text-transform:uppercase;font-weight:700;letter-spacing:0.04em;margin-bottom:8px;}
+  .highlight-card.best .highlight-label{color:var(--green);}
+  .highlight-card.difficulty .highlight-label{color:var(--rose-2);}
+  .highlight-names{font-family:'Sora',sans-serif;font-weight:700;font-size:15px;color:var(--navy);line-height:1.5;}
+  .highlight-sub{font-size:12px;color:#8a8fa3;margin-top:4px;}
+  .bulletin-header-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px;}
+  .bulletin-header-row .bulletin-title{margin-bottom:0;}
+  @media (max-width:600px){ .highlight-row{grid-template-columns:1fr;} }
   .student-row{display:flex;align-items:center;justify-content:space-between;padding:14px 4px;border-top:1px solid var(--line);gap:12px;flex-wrap:wrap;}
   .student-row:first-child{border-top:none;}
   .student-name{font-weight:600;color:var(--navy);font-size:14.5px;}
@@ -109,6 +130,7 @@
 </head>
 <body>
 
+<div class="banner">🧪 Maquette avec données fictives — <b>rien n'est encore connecté</b> à un vrai back-end</div>
 
 <div class="app">
   <div class="top">
@@ -162,7 +184,19 @@
     </div>
 
     <div class="card hidden" id="tabStats">
-      <div class="table-scroll"><table id="statsTable"></table></div>
+      <div class="section-label">Vue d'ensemble de la promo</div>
+      <div class="stats-overview" id="statsOverview"></div>
+      <div class="highlight-row" id="highlightRow"></div>
+      <div class="bulletin-toggle-row">
+        <button class="btn btn-outline" id="bulletinToggleBtn" onclick="toggleBulletin()">Accéder au bulletin détaillé</button>
+      </div>
+      <div class="bulletin-section hidden" id="bulletinSection">
+        <div class="bulletin-header-row">
+          <div class="bulletin-title">Bulletin — détail des notes par apprenant</div>
+          <button class="btn btn-outline btn-sm export-pdf-btn" onclick="exportBulletinPDF()">Exporter en PDF</button>
+        </div>
+        <div class="table-scroll"><table id="statsTable"></table></div>
+      </div>
     </div>
 
     <div class="card hidden" id="tabStudents">
@@ -284,6 +318,10 @@ function switchTab(tab){
   document.getElementById('tabEvals').classList.toggle('hidden', tab!=='evals');
   document.getElementById('tabStats').classList.toggle('hidden', tab!=='stats');
   document.getElementById('tabStudents').classList.toggle('hidden', tab!=='students');
+  if(tab==='stats'){
+    document.getElementById('bulletinSection').classList.add('hidden');
+    document.getElementById('bulletinToggleBtn').textContent = 'Accéder au bulletin détaillé';
+  }
 }
 
 function toggleForm(id){
@@ -387,7 +425,161 @@ function addEvaluation(){
   renderStats();
 }
 
+function renderStatsOverview(){
+  const c = CLASSES.find(x=>x.id===currentClassId);
+  const overview = document.getElementById('statsOverview');
+
+  const totalStudents = c.students.length;
+  const totalEvals = c.evaluations.length;
+  const activeEvals = c.evaluations.filter(ev=>ev.active).length;
+
+  let allGrades = [];
+  let completedCount = 0;
+  c.students.forEach(s=>{
+    c.evaluations.forEach(ev=>{
+      const g = c.grades[s.id] ? c.grades[s.id][ev.id] : null;
+      if(g!==null && g!==undefined){ allGrades.push(g); completedCount++; }
+    });
+  });
+  const successRate = allGrades.length ? Math.round((allGrades.filter(g=>g>=10).length/allGrades.length)*100) : 0;
+  const average = allGrades.length ? (allGrades.reduce((a,b)=>a+b,0)/allGrades.length).toFixed(1) : '—';
+  const expectedTotal = totalStudents * totalEvals;
+  const completionRate = expectedTotal ? Math.round((completedCount/expectedTotal)*100) : 0;
+
+  overview.innerHTML = `
+    <div class="stat-module">
+      <div class="stat-num">${totalStudents}</div>
+      <div class="stat-label">Apprenants</div>
+    </div>
+    <div class="stat-module">
+      <div class="stat-num">${activeEvals}/${totalEvals}</div>
+      <div class="stat-label">Évaluations activées</div>
+    </div>
+    <div class="stat-module">
+      <div class="stat-num">${completionRate}%</div>
+      <div class="stat-label">Évaluations complétées par la promo</div>
+    </div>
+    <div class="stat-module">
+      <div class="stat-num">${successRate}%</div>
+      <div class="stat-label">Taux de réussite (≥ 10/20)</div>
+    </div>
+    <div class="stat-module">
+      <div class="stat-num">${average}${average!=='—'?'/20':''}</div>
+      <div class="stat-label">Moyenne générale de la promo</div>
+    </div>
+  `;
+}
+
+function renderHighlights(){
+  const c = CLASSES.find(x=>x.id===currentClassId);
+  const row = document.getElementById('highlightRow');
+
+  // Moyenne personnelle de chaque apprenant, sur ses seules évaluations déjà faites
+  const studentAverages = c.students.map(s=>{
+    const grades = c.evaluations
+      .map(ev => c.grades[s.id] ? c.grades[s.id][ev.id] : null)
+      .filter(g => g!==null && g!==undefined);
+    const avg = grades.length ? grades.reduce((a,b)=>a+b,0)/grades.length : null;
+    return {student:s, avg, count:grades.length};
+  }).filter(x => x.count > 0); // on ignore les apprenants sans aucune note pour l'instant
+
+  let bestHtml, difficultyHtml;
+
+  if(studentAverages.length === 0){
+    bestHtml = `<div class="highlight-sub">Pas encore assez de notes pour désigner un meilleur élève.</div>`;
+    difficultyHtml = `<div class="highlight-sub">Pas encore assez de notes.</div>`;
+  } else {
+    const maxAvg = Math.max(...studentAverages.map(x=>x.avg));
+    const bestStudents = studentAverages.filter(x=>Math.abs(x.avg - maxAvg) < 0.001);
+    bestHtml = `
+      <div class="highlight-names">${bestStudents.map(x=>x.student.prenom+' '+x.student.nom).join(', ')}</div>
+      <div class="highlight-sub">Moyenne : ${maxAvg.toFixed(1)}/20</div>
+    `;
+
+    const strugglingStudents = studentAverages.filter(x=>x.avg < 10);
+    if(strugglingStudents.length === 0){
+      difficultyHtml = `<div class="highlight-sub">Aucun apprenant en dessous de 10/20 pour l'instant 🎉</div>`;
+    } else {
+      difficultyHtml = `
+        <div class="highlight-names">${strugglingStudents.map(x=>x.student.prenom+' '+x.student.nom+' ('+x.avg.toFixed(1)+'/20)').join(', ')}</div>
+        <div class="highlight-sub">${strugglingStudents.length} apprenant${strugglingStudents.length>1?'s':''} avec une moyenne inférieure à 10/20</div>
+      `;
+    }
+  }
+
+  row.innerHTML = `
+    <div class="highlight-card best">
+      <div class="highlight-label">🏆 Meilleur élève</div>
+      ${bestHtml}
+    </div>
+    <div class="highlight-card difficulty">
+      <div class="highlight-label">⚠️ Élève(s) en difficulté</div>
+      ${difficultyHtml}
+    </div>
+  `;
+}
+
+function exportBulletinPDF(){
+  const c = CLASSES.find(x=>x.id===currentClassId);
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF({orientation: c.evaluations.length > 4 ? 'landscape' : 'portrait'});
+
+  // En-tête
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(16);
+  doc.setTextColor(13,31,60);
+  doc.text(c.name, 14, 18);
+
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(10);
+  doc.setTextColor(140,143,163);
+  doc.text('Bulletin détaillé — généré le ' + new Date().toLocaleDateString('fr-FR'), 14, 25);
+
+  // Tableau des notes
+  const head = [['Apprenant', ...c.evaluations.map(ev=>ev.nom)]];
+  const body = c.students.map(s=>{
+    const row = [s.prenom + ' ' + s.nom];
+    c.evaluations.forEach(ev=>{
+      const g = c.grades[s.id] ? c.grades[s.id][ev.id] : null;
+      row.push((g===null || g===undefined) ? '—' : g + '/20');
+    });
+    return row;
+  });
+
+  doc.autoTable({
+    head: head,
+    body: body,
+    startY: 32,
+    styles:{font:'helvetica', fontSize:10, textColor:[26,26,46], cellPadding:5},
+    headStyles:{fillColor:[13,31,60], textColor:[255,255,255], fontStyle:'bold'},
+    alternateRowStyles:{fillColor:[251,245,239]},
+    didParseCell: function(data){
+      if(data.section==='body' && data.column.index > 0){
+        const raw = data.cell.raw;
+        if(raw !== '—'){
+          const val = parseFloat(raw);
+          data.cell.styles.textColor = val >= 10 ? [28,138,90] : [232,25,75];
+          data.cell.styles.fontStyle = 'bold';
+        }
+      }
+    }
+  });
+
+  const safeClassName = c.name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+  doc.save('bulletin-' + safeClassName + '.pdf');
+}
+
+function toggleBulletin(){
+  const section = document.getElementById('bulletinSection');
+  const btn = document.getElementById('bulletinToggleBtn');
+  const isHidden = section.classList.contains('hidden');
+  section.classList.toggle('hidden');
+  btn.textContent = isHidden ? 'Masquer le bulletin détaillé' : 'Accéder au bulletin détaillé';
+}
+
 function renderStats(){
+  renderStatsOverview();
+  renderHighlights();
   const c = CLASSES.find(x=>x.id===currentClassId);
   const table = document.getElementById('statsTable');
   let thead = '<thead><tr><th>Apprenant</th>';
