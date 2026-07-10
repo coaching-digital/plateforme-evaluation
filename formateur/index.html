@@ -148,6 +148,17 @@
   .params-comp-row{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border:1.5px solid var(--line);border-radius:14px;margin-bottom:10px;gap:14px;flex-wrap:wrap;}
   .params-comp-name{font-size:14px;font-weight:600;color:var(--navy);}
   .params-comp-count{font-size:12px;color:#8a8fa3;margin-top:2px;}
+  .mastery-badge{font-size:11px;font-weight:700;padding:4px 10px;border-radius:7px;white-space:nowrap;}
+  .mastery-badge.na{background:rgba(232,25,75,0.10);color:var(--rose-2);}
+  .mastery-badge.eca{background:rgba(244,137,74,0.12);color:var(--orange);}
+  .mastery-badge.acquis{background:rgba(13,31,60,0.08);color:var(--navy-2);}
+  .mastery-badge.maitrise{background:rgba(28,138,90,0.12);color:var(--green);}
+  .mastery-theme-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--orange);margin:16px 0 8px;font-family:'Sora',sans-serif;}
+  .mastery-theme-title:first-child{margin-top:0;}
+  .mastery-comp-title{font-size:12.5px;font-weight:700;color:var(--navy);margin:10px 0 6px;}
+  .mastery-crit-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;background:var(--cream);border-radius:8px;margin-bottom:6px;font-size:12.5px;color:var(--ink);}
+  .bilan-comment-box textarea{width:100%;min-height:100px;padding:12px 14px;border:1.5px solid var(--line);border-radius:12px;font-family:'Manrope',sans-serif;font-size:13.5px;background:var(--cream);resize:vertical;}
+  .bilan-comment-box textarea:focus{outline:none;border-color:var(--orange);}
   .filter-pill-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
   .eval-menu-btn{width:100%;padding:16px;margin-bottom:10px;}
   .btn-rose-active{background:rgba(232,25,75,0.07) !important;color:var(--rose-2) !important;border-color:rgba(232,25,75,0.2) !important;}
@@ -341,12 +352,12 @@
     </div>
   </div>
 
-  <div class="modal-overlay hidden" id="bilanModalOverlay">
-    <div class="modal-box">
-      <div class="modal-title">Bilan semestriel</div>
-      <div class="modal-recap">Cette fonctionnalité arrive bientôt : elle permettra d'envoyer par email un bilan de fin de semestre, avec les éléments qu'on définira ensemble.</div>
+  <div class="modal-overlay hidden" id="bilanCompetencesModalOverlay">
+    <div class="modal-box" style="max-width:600px;">
+      <div class="modal-title" id="bilanCompetencesModalTitle"></div>
+      <div id="bilanCompetencesModalBody"></div>
       <div class="modal-actions">
-        <button class="btn btn-outline" onclick="closeBilanModal()">Fermer</button>
+        <button class="btn btn-outline" onclick="closeBilanCompetencesModal()">Fermer</button>
       </div>
     </div>
   </div>
@@ -1135,6 +1146,73 @@ const POSTURE_LEVELS = [
 
 const POSTURE_COEF = 2;
 
+// ---------- Niveaux de maîtrise des critères de performance ----------
+const MASTERY_LEVELS = [
+  {id:'na', label:'Non acquis', min:0, max:8, color:'var(--rose-2)'},
+  {id:'eca', label:"En cours d'acquisition", min:8, max:12, color:'var(--orange)'},
+  {id:'acquis', label:'Acquis', min:12, max:16, color:'var(--navy-2)'},
+  {id:'maitrise', label:'Maîtrisé', min:16, max:20.01, color:'var(--green)'}
+];
+
+function getMasteryLevel(avg){
+  if(avg===null || avg===undefined) return null;
+  return MASTERY_LEVELS.find(l=>avg>=l.min && avg<l.max) || MASTERY_LEVELS[MASTERY_LEVELS.length-1];
+}
+
+// Toute évaluation nourrit, avec sa note, chacun des critères de la compétence à laquelle elle est rattachée
+// (pas encore de sélection fine critère par critère sur une évaluation — voir étape 2 du chantier référentiel).
+function computeCriteresMastery(c, studentId, sem){
+  const flat = getFlatCompetences(c.filiereId);
+  const results = [];
+  flat.forEach(comp=>{
+    if(!(c.competencesActives||[]).includes(comp.id)) return;
+    if(!(c.themesActifs||[]).includes(comp.themeId)) return;
+    const compEvals = c.evaluations.filter(ev=>ev.competenceId===comp.id && (!sem || getEvalSemester(c, ev)===sem));
+    comp.criteres.forEach(crit=>{
+      const grades = compEvals
+        .map(ev=> c.grades[studentId] ? c.grades[studentId][ev.id] : null)
+        .filter(g=>g!==null && g!==undefined);
+      const avg = grades.length ? grades.reduce((a,b)=>a+b,0)/grades.length : null;
+      results.push({
+        themeId: comp.themeId, themeNom: comp.themeNom,
+        competenceId: comp.id, competenceNom: comp.nom,
+        critereId: crit.id, critereLabel: crit.label,
+        nbEvals: grades.length, avg, level: getMasteryLevel(avg)
+      });
+    });
+  });
+  return results;
+}
+
+// ---------- Bilan semestriel de compétences (commentaire + validation, rédigé par la formatrice) ----------
+// Une fois validé, le bilan est figé : la moyenne et les niveaux de maîtrise affichés/exportés sont
+// ceux de l'instant de la validation (snapshot), pas recalculés en direct — même si des compétences
+// ou critères sont désactivés par la suite. Seul un nouveau clic sur "Valider" rafraîchit le snapshot.
+function getBilanRecord(c, studentId, sem){
+  return (c.bilans && c.bilans[studentId] && c.bilans[studentId][sem]) || {text:'', validated:false, validatedAt:null, avgSnapshot:null, masterySnapshot:null};
+}
+
+function saveBilanRecord(c, studentId, sem, text, validate){
+  if(!c.bilans) c.bilans = {};
+  if(!c.bilans[studentId]) c.bilans[studentId] = {};
+  const prev = c.bilans[studentId][sem] || {text:'', validated:false, validatedAt:null, avgSnapshot:null, masterySnapshot:null};
+  const next = {
+    text: text,
+    validated: validate ? true : prev.validated,
+    validatedAt: validate ? new Date().toISOString() : prev.validatedAt,
+    avgSnapshot: prev.avgSnapshot,
+    masterySnapshot: prev.masterySnapshot
+  };
+  if(validate){
+    const s = c.students.find(x=>x.id===studentId);
+    const items = getStudentSemesterItems(c, s, sem);
+    const completed = items.filter(it=>it.grade!==null && it.grade!==undefined);
+    next.avgSnapshot = completed.length ? weightedAverage(completed.map(it=>({grade:it.grade, coef:it.coef}))) : null;
+    next.masterySnapshot = computeCriteresMastery(c, studentId, sem);
+  }
+  c.bilans[studentId][sem] = next;
+}
+
 function computePostureNote(criteria){
   const answered = POSTURE_CRITERIA.filter(c => criteria[c.id]);
   if(answered.length < POSTURE_CRITERIA.length) return null; // pas encore complet
@@ -1322,8 +1400,8 @@ function renderStudents(){
         <div class="code-chip ${s.code?'':'empty'}">${s.code || 'Aucun code généré'}</div>
         <button class="btn btn-outline btn-sm" onclick="generateCode('${s.id}')">${s.code?'Régénérer':'Générer un code'}</button>
         <button class="btn btn-tint-orange btn-sm" onclick="openStudentBulletinModal('${s.id}')">Bulletin semestriel</button>
+        <button class="btn btn-tint-orange btn-sm" onclick="openBilanCompetencesModal('${s.id}')">Bilan de compétences</button>
         <button class="btn btn-tint-orange btn-sm" onclick="openPostureProModal('${s.id}')">Posture professionnelle</button>
-        <button class="btn btn-tint-orange btn-sm" onclick="openBilanModal('${s.id}')">Bilan semestriel</button>
       </div>
     `;
     rows.appendChild(row);
@@ -1379,7 +1457,8 @@ function getStudentSemesterItems(c, s, sem){
   const evalsInSem = c.evaluations.filter(ev => getEvalSemester(c, ev) === sem);
   const items = evalsInSem.map(ev=>{
     const g = c.grades[s.id] ? c.grades[s.id][ev.id] : null;
-    return {name: ev.nom, grade: g, coef: ev.coefficient || 1};
+    const comp = getCompetence(c.filiereId, ev.competenceId);
+    return {name: ev.nom, grade: g, coef: ev.coefficient || 1, competence: comp ? comp.nom : null};
   });
   const posture = getPostureNoteForSemester(c, s.id, sem);
   if(posture.note !== null && posture.note !== undefined){
@@ -1452,35 +1531,53 @@ function exportStudentBulletinPDF(){
   const semInfo = SEMESTER_LABELS[sem];
 
   const doc = new jsPDF({orientation: 'portrait'});
-  doc.setFont('helvetica','bold');
-  doc.setFontSize(16);
-  doc.setTextColor(0,0,0);
-  doc.text(s.prenom + ' ' + s.nom, 14, 18);
+  const pageWidth = doc.internal.pageSize.getWidth();
 
+  // ---- Bandeau d'en-tête ----
+  doc.setFillColor(13,31,60);
+  doc.rect(0, 0, pageWidth, 34, 'F');
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(18);
+  doc.setTextColor(255,255,255);
+  doc.text('Bulletin de notes — ' + s.prenom + ' ' + s.nom, 14, 16);
   doc.setFont('helvetica','normal');
-  doc.setFontSize(10);
-  doc.setTextColor(100,100,100);
-  doc.text(c.name + ' — ' + semInfo.name + ' (' + semInfo.interval + ') — généré le ' + new Date().toLocaleDateString('fr-FR'), 14, 25);
+  doc.setFontSize(10.5);
+  doc.setTextColor(215,222,235);
+  doc.text(c.name + ' — ' + semInfo.name + ' (' + semInfo.interval + ')', 14, 24);
+  doc.text('Généré le ' + new Date().toLocaleDateString('fr-FR'), 14, 30);
 
+  // ---- Bloc moyenne mise en avant ----
+  doc.setFillColor(251,245,239);
+  doc.roundedRect(14, 42, pageWidth - 28, 20, 3, 3, 'F');
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(9.5);
+  doc.setTextColor(120,120,120);
+  doc.text('MOYENNE PONDÉRÉE DU SEMESTRE', 20, 50);
   doc.setFont('helvetica','bold');
-  doc.setFontSize(11);
-  doc.setTextColor(0,0,0);
-  doc.text('Moyenne pondérée du semestre : ' + (avg!==null ? avg.toFixed(1)+'/20' : '—'), 14, 34);
+  doc.setFontSize(17);
+  doc.setTextColor(avg!==null && avg>=10 ? 28 : 232, avg!==null && avg>=10 ? 138 : 25, avg!==null && avg>=10 ? 90 : 75);
+  doc.text(avg!==null ? avg.toFixed(1)+'/20' : '—', 20, 58);
 
-  const head = [['Évaluation', 'Coefficient', 'Note']];
-  const tableBody = items.map(it=>[it.name, String(it.coef), (it.grade===null||it.grade===undefined) ? '—' : it.grade+'/20']);
+  // ---- Tableau des évaluations ----
+  let y = 72;
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(11.5);
+  doc.setTextColor(13,31,60);
+  doc.text('Évaluations du semestre', 14, y);
 
+  const evalHead = [['Évaluation', 'Compétence', 'Coef', 'Note']];
+  const evalBody = items.map(it=>[it.name, it.competence || '—', String(it.coef), (it.grade===null||it.grade===undefined) ? '—' : it.grade+'/20']);
   doc.autoTable({
-    head: head,
-    body: tableBody,
-    startY: 42,
-    styles:{font:'helvetica', fontSize:10, textColor:[0,0,0], cellPadding:5, lineColor:[200,200,200], lineWidth:0.1},
+    head: evalHead,
+    body: evalBody,
+    startY: y + 4,
+    styles:{font:'helvetica', fontSize:9.5, textColor:[0,0,0], cellPadding:4.5, lineColor:[220,220,220], lineWidth:0.1},
     headStyles:{fillColor:[240,240,240], textColor:[0,0,0], fontStyle:'bold'},
     alternateRowStyles:{fillColor:[250,250,250]}
   });
 
   const safeName = (s.prenom + '-' + s.nom).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
-  doc.save('bulletin-' + safeName + '-' + sem + '.pdf');
+  doc.save('bulletin-notes-' + safeName + '-' + sem + '.pdf');
 }
 
 // ---------- Posture professionnelle ----------
@@ -1596,13 +1693,210 @@ function renderPostureProModalBody(){
   `;
 }
 
-// ---------- Bilan semestriel (à venir) ----------
-function openBilanModal(studentId){
-  document.getElementById('bilanModalOverlay').classList.remove('hidden');
+// ---------- Bilan semestriel de compétences ----------
+let pendingBilanCompStudentId = null;
+let pendingBilanCompSemester = null;
+
+function openBilanCompetencesModal(studentId){
+  const c = CLASSES.find(x=>x.id===currentClassId);
+  const s = c.students.find(x=>x.id===studentId);
+  pendingBilanCompStudentId = studentId;
+  pendingBilanCompSemester = null;
+  document.getElementById('bilanCompetencesModalTitle').textContent = 'Bilan de compétences — ' + s.prenom + ' ' + s.nom;
+  renderBilanCompetencesModalBody();
+  document.getElementById('bilanCompetencesModalOverlay').classList.remove('hidden');
 }
 
-function closeBilanModal(){
-  document.getElementById('bilanModalOverlay').classList.add('hidden');
+function closeBilanCompetencesModal(){
+  document.getElementById('bilanCompetencesModalOverlay').classList.add('hidden');
+  pendingBilanCompStudentId = null;
+  pendingBilanCompSemester = null;
+}
+
+function chooseBilanCompSemester(sem){
+  pendingBilanCompSemester = sem;
+  renderBilanCompetencesModalBody();
+}
+
+function renderBilanCompetencesModalBody(){
+  const body = document.getElementById('bilanCompetencesModalBody');
+
+  if(!pendingBilanCompSemester){
+    body.innerHTML = `
+      <p style="font-size:13.5px;color:#5c6178;margin-bottom:16px;">Choisis le semestre à consulter :</p>
+      <div class="highlight-row">
+        <button class="btn btn-outline" style="width:100%;padding:16px;" onclick="chooseBilanCompSemester('s1')">Semestre 1</button>
+        <button class="btn btn-outline" style="width:100%;padding:16px;" onclick="chooseBilanCompSemester('s2')">Semestre 2</button>
+      </div>
+    `;
+    return;
+  }
+
+  const c = CLASSES.find(x=>x.id===currentClassId);
+  const s = c.students.find(x=>x.id===pendingBilanCompStudentId);
+  const sem = pendingBilanCompSemester;
+
+  const record = getBilanRecord(c, s.id, sem);
+
+  let avg, mastery;
+  if(record.validated && record.masterySnapshot){
+    avg = record.avgSnapshot;
+    mastery = record.masterySnapshot;
+  } else {
+    const items = getStudentSemesterItems(c, s, sem);
+    const completedItems = items.filter(it=>it.grade!==null && it.grade!==undefined);
+    avg = completedItems.length ? weightedAverage(completedItems.map(it=>({grade:it.grade, coef:it.coef}))) : null;
+    mastery = computeCriteresMastery(c, s.id, sem);
+  }
+
+  const masteryByTheme = {};
+  mastery.forEach(m=>{
+    if(!masteryByTheme[m.themeId]) masteryByTheme[m.themeId] = {themeNom:m.themeNom, byComp:{}};
+    if(!masteryByTheme[m.themeId].byComp[m.competenceId]) masteryByTheme[m.themeId].byComp[m.competenceId] = {competenceNom:m.competenceNom, criteres:[]};
+    masteryByTheme[m.themeId].byComp[m.competenceId].criteres.push(m);
+  });
+  const masteryHtml = Object.keys(masteryByTheme).length===0 ? '<p style="font-size:13px;color:#8a8fa3;">Aucune compétence active pour cette classe.</p>' : Object.values(masteryByTheme).map(theme=>{
+    const compsHtml = Object.values(theme.byComp).map(comp=>{
+      const critRows = comp.criteres.map(m=>{
+        const levelHtml = m.level ? `<span class="mastery-badge ${m.level.id}">${m.level.label}</span>` : `<span class="mastery-badge" style="background:rgba(13,31,60,0.05);color:#8a8fa3;">Pas encore évalué</span>`;
+        return `<div class="mastery-crit-row"><span>${m.critereLabel}</span>${levelHtml}</div>`;
+      }).join('');
+      return `<div class="mastery-comp-title">${comp.competenceNom}</div>${critRows}`;
+    }).join('');
+    return `<div class="mastery-theme-title">${theme.themeNom}</div>${compsHtml}`;
+  }).join('');
+
+  const statusHtml = record.validated
+    ? `<span class="status-tag done">Validé le ${new Date(record.validatedAt).toLocaleDateString('fr-FR')} — figé</span>`
+    : `<span class="status-tag locked">Non validé — aperçu en direct</span>`;
+
+  body.innerHTML = `
+    <div style="margin-bottom:12px;">
+      <span class="clickable-student-name" onclick="pendingBilanCompSemester=null; renderBilanCompetencesModalBody();">‹ Changer de semestre</span>
+    </div>
+    <div class="modal-recap">${SEMESTER_LABELS[sem].name} — ${SEMESTER_LABELS[sem].interval} &nbsp; ${statusHtml}</div>
+    <div class="modal-recap">Moyenne générale du semestre : <b>${avg!==null ? avg.toFixed(1)+'/20' : '—'}</b></div>
+
+    <div class="bulletin-title" style="margin-top:14px;">Niveaux de maîtrise par critère de performance</div>
+    <div style="max-height:260px;overflow-y:auto;margin-bottom:16px;">${masteryHtml}</div>
+
+    <div class="bulletin-title">Commentaire général</div>
+    <div class="bilan-comment-box" style="margin-bottom:14px;">
+      <textarea id="bilanCompCommentInput" placeholder="Rédige ici ton commentaire général sur l'acquisition des compétences ce semestre...">${record.text}</textarea>
+    </div>
+
+    <div style="display:flex;gap:10px;flex-wrap:wrap;">
+      <button class="btn btn-outline btn-sm" onclick="saveBilanCompetences(false)">Enregistrer (brouillon)</button>
+      <button class="btn btn-primary btn-sm" onclick="saveBilanCompetences(true)">Valider le bilan</button>
+      <button class="btn btn-outline btn-sm" onclick="exportBilanCompetencesPDF()">Exporter en PDF</button>
+    </div>
+  `;
+}
+
+function saveBilanCompetences(validate){
+  const c = CLASSES.find(x=>x.id===currentClassId);
+  const text = document.getElementById('bilanCompCommentInput').value;
+  saveBilanRecord(c, pendingBilanCompStudentId, pendingBilanCompSemester, text, validate);
+  renderBilanCompetencesModalBody();
+  if(validate) alert('Bilan validé — il devient visible par l\'apprenant tel quel, avec ton commentaire.');
+}
+
+function exportBilanCompetencesPDF(){
+  const c = CLASSES.find(x=>x.id===currentClassId);
+  const s = c.students.find(x=>x.id===pendingBilanCompStudentId);
+  const sem = pendingBilanCompSemester;
+  if(!s || !sem) return;
+  const { jsPDF } = window.jspdf;
+
+  const semInfo = SEMESTER_LABELS[sem];
+  const record = getBilanRecord(c, s.id, sem);
+
+  let avg, mastery;
+  if(record.validated && record.masterySnapshot){
+    avg = record.avgSnapshot;
+    mastery = record.masterySnapshot;
+  } else {
+    const items = getStudentSemesterItems(c, s, sem);
+    const completedItems = items.filter(it=>it.grade!==null && it.grade!==undefined);
+    avg = completedItems.length ? weightedAverage(completedItems.map(it=>({grade:it.grade, coef:it.coef}))) : null;
+    mastery = computeCriteresMastery(c, s.id, sem);
+  }
+
+  const doc = new jsPDF({orientation: 'portrait'});
+  const pageWidth = doc.internal.pageSize.getWidth();
+
+  // ---- Bandeau d'en-tête ----
+  doc.setFillColor(13,31,60);
+  doc.rect(0, 0, pageWidth, 34, 'F');
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(18);
+  doc.setTextColor(255,255,255);
+  doc.text('Bilan de compétences — ' + s.prenom + ' ' + s.nom, 14, 16);
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(10.5);
+  doc.setTextColor(215,222,235);
+  doc.text(c.name + ' — ' + semInfo.name + ' (' + semInfo.interval + ')', 14, 24);
+  doc.text((record.validated ? 'Bilan validé le ' + new Date(record.validatedAt).toLocaleDateString('fr-FR') : 'Brouillon — bilan non validé') + ' — généré le ' + new Date().toLocaleDateString('fr-FR'), 14, 30);
+
+  // ---- Bloc moyenne mise en avant ----
+  doc.setFillColor(251,245,239);
+  doc.roundedRect(14, 42, pageWidth - 28, 20, 3, 3, 'F');
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(9.5);
+  doc.setTextColor(120,120,120);
+  doc.text('MOYENNE GÉNÉRALE DU SEMESTRE', 20, 50);
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(17);
+  doc.setTextColor(avg!==null && avg>=10 ? 28 : 232, avg!==null && avg>=10 ? 138 : 25, avg!==null && avg>=10 ? 90 : 75);
+  doc.text(avg!==null ? avg.toFixed(1)+'/20' : '—', 20, 58);
+
+  // ---- Tableau des niveaux de maîtrise par critère ----
+  let y = 72;
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(11.5);
+  doc.setTextColor(13,31,60);
+  doc.text('Niveaux de maîtrise par critère de performance', 14, y);
+
+  const masteryHead = [['Thème', 'Compétence', 'Critère de performance', 'Niveau']];
+  const masteryBody = mastery.map(m=>[m.themeNom, m.competenceNom, m.critereLabel, m.level ? m.level.label : 'Pas encore évalué']);
+  doc.autoTable({
+    head: masteryHead,
+    body: masteryBody,
+    startY: y + 4,
+    styles:{font:'helvetica', fontSize:8.5, textColor:[0,0,0], cellPadding:4, lineColor:[220,220,220], lineWidth:0.1},
+    headStyles:{fillColor:[240,240,240], textColor:[0,0,0], fontStyle:'bold'},
+    alternateRowStyles:{fillColor:[250,250,250]},
+    columnStyles:{0:{cellWidth:34}, 1:{cellWidth:46}, 3:{cellWidth:32}},
+    didParseCell: function(data){
+      if(data.section==='body' && data.column.index===3){
+        const rowMastery = mastery[data.row.index];
+        if(rowMastery && rowMastery.level){
+          const colorMap = {na:[232,25,75], eca:[244,137,74], acquis:[28,43,74], maitrise:[28,138,90]};
+          const rgb = colorMap[rowMastery.level.id];
+          if(rgb) data.cell.styles.textColor = rgb;
+          data.cell.styles.fontStyle = 'bold';
+        }
+      }
+    }
+  });
+
+  // ---- Commentaire général ----
+  y = doc.lastAutoTable.finalY + 14;
+  if(y > 260){ doc.addPage(); y = 20; }
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(11.5);
+  doc.setTextColor(13,31,60);
+  doc.text('Commentaire général', 14, y);
+  y += 7;
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(10);
+  doc.setTextColor(50,50,50);
+  const commentText = record.text && record.text.trim() ? record.text.trim() : "Aucun commentaire rédigé pour ce semestre.";
+  const wrapped = doc.splitTextToSize(commentText, pageWidth - 28);
+  doc.text(wrapped, 14, y);
+
+  const safeName = (s.prenom + '-' + s.nom).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+  doc.save('bilan-competences-' + safeName + '-' + sem + '.pdf');
 }
 
 function addStudent(){
