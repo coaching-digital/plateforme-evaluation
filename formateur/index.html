@@ -455,25 +455,31 @@ function renderEvals(){
       <div class="category-head">
         <div>
           <div class="category-name">Non classées</div>
-          <div class="category-desc">Évaluations dont la catégorie a été supprimée. Choisis une nouvelle catégorie pour chacune, ou laisse-les ici pour l'instant — elles restent visibles et faisables par les apprenants.</div>
+          <div class="category-desc">Évaluations dont la catégorie a été supprimée. Range-les dans une catégorie existante, crées-en une nouvelle directement ici, ou laisse-les ici pour l'instant — elles restent visibles et faisables par les apprenants.</div>
         </div>
       </div>
     `;
     unclassified.forEach(ev=>{
       const options = c.categories.map(cat=>`<option value="${cat.id}">${cat.nom}</option>`).join('');
       html += `
-        <div class="eval-row">
-          <div class="eval-info"><div class="nom">${ev.nom}</div></div>
-          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-            <div class="toggle ${ev.active?'on':''}" onclick="toggleEval('${ev.id}')"><div class="knob"></div></div>
-            <div class="toggle-label">${ev.active?'Activé pour la classe':'Désactivé'}</div>
-            ${c.categories.length>0 ? `
-              <select id="reassign-${ev.id}" style="padding:6px 10px;border:1.5px solid var(--line);border-radius:8px;font-size:12.5px;font-family:'Manrope',sans-serif;background:var(--cream);">
+        <div class="eval-row" style="flex-direction:column;align-items:stretch;">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;">
+            <div class="eval-info"><div class="nom">${ev.nom}</div></div>
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+              <div class="toggle ${ev.active?'on':''}" onclick="toggleEval('${ev.id}')"><div class="knob"></div></div>
+              <div class="toggle-label">${ev.active?'Activé pour la classe':'Désactivé'}</div>
+              <select id="reassign-${ev.id}" onchange="onReassignChange('${ev.id}')" style="padding:6px 10px;border:1.5px solid var(--line);border-radius:8px;font-size:12.5px;font-family:'Manrope',sans-serif;background:var(--cream);">
                 <option value="">Ranger dans...</option>
+                <option value="__new__">+ Nouvelle catégorie</option>
                 ${options}
               </select>
               <button class="btn btn-outline btn-sm" onclick="reassignEval('${ev.id}')">Valider</button>
-            ` : ''}
+            </div>
+          </div>
+          <div class="inline-form hidden" id="newCatInline-${ev.id}" style="margin-top:12px;">
+            <input type="text" id="newCatInlineName-${ev.id}" placeholder="Nom de la nouvelle catégorie">
+            <textarea id="newCatInlineDesc-${ev.id}" placeholder="Compétences évaluées dans ce module (optionnel)"></textarea>
+            <button class="btn btn-primary btn-sm" onclick="createCategoryAndAssign('${ev.id}')">Créer la catégorie et l'assigner</button>
           </div>
         </div>
       `;
@@ -483,13 +489,32 @@ function renderEvals(){
   }
 }
 
+function onReassignChange(evalId){
+  const select = document.getElementById('reassign-' + evalId);
+  const inlineForm = document.getElementById('newCatInline-' + evalId);
+  inlineForm.classList.toggle('hidden', select.value !== '__new__');
+}
+
 function reassignEval(evalId){
   const c = CLASSES.find(x=>x.id===currentClassId);
   const select = document.getElementById('reassign-' + evalId);
   const newCatId = select.value;
-  if(!newCatId) return;
+  if(!newCatId || newCatId === '__new__') return;
   const ev = c.evaluations.find(e=>e.id===evalId);
   ev.categoryId = newCatId;
+  renderEvals();
+}
+
+function createCategoryAndAssign(evalId){
+  const c = CLASSES.find(x=>x.id===currentClassId);
+  const name = document.getElementById('newCatInlineName-' + evalId).value.trim();
+  const desc = document.getElementById('newCatInlineDesc-' + evalId).value.trim();
+  if(!name) return;
+  const newCat = {id:'c'+Date.now(), nom:name, description:desc};
+  c.categories.push(newCat);
+  const ev = c.evaluations.find(e=>e.id===evalId);
+  ev.categoryId = newCat.id;
+  renderCategories();
   renderEvals();
 }
 
