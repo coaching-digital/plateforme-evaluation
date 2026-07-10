@@ -62,10 +62,10 @@
   .category-desc{font-size:13px;color:#5c6178;line-height:1.6;margin-top:6px;}
   .eval-row{display:flex;align-items:center;justify-content:space-between;padding:14px 4px;border-top:1px solid var(--line);gap:14px;flex-wrap:wrap;margin-top:12px;}
   .eval-info .nom{font-size:14.5px;font-weight:600;color:var(--navy);}
-  .toggle{width:46px;height:26px;border-radius:999px;background:#d8dbe3;position:relative;cursor:pointer;flex-shrink:0;transition:background .2s ease;}
+  .toggle{width:36px;height:20px;border-radius:999px;background:#d8dbe3;position:relative;cursor:pointer;flex-shrink:0;transition:background .2s ease;}
   .toggle.on{background:var(--rose-2);}
-  .toggle .knob{position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:white;transition:left .2s ease;box-shadow:0 1px 2px rgba(0,0,0,0.15);}
-  .toggle.on .knob{left:23px;}
+  .toggle .knob{position:absolute;top:2.5px;left:2.5px;width:15px;height:15px;border-radius:50%;background:white;transition:left .2s ease;box-shadow:0 1px 2px rgba(0,0,0,0.15);}
+  .toggle.on .knob{left:18.5px;}
   .toggle-label{font-size:12px;color:#8a8fa3;margin-left:10px;}
   .inline-form{display:flex;flex-direction:column;gap:10px;margin-top:14px;padding-top:14px;border-top:1px dashed var(--line);}
   .inline-form input, .inline-form textarea, .inline-form select{padding:10px 14px;border:1.5px solid var(--line);border-radius:10px;font-family:'Manrope',sans-serif;font-size:14px;background:var(--cream);width:100%;}
@@ -132,6 +132,16 @@
   .eval-badge.tag-theme{background:rgba(244,137,74,0.10);color:var(--orange);text-transform:uppercase;font-size:10px;letter-spacing:0.03em;display:block;width:fit-content;margin:0 0 8px;}
   .eval-badge.tag-critere{background:rgba(232,25,75,0.07);color:var(--rose-2);display:block;width:fit-content;margin-top:8px;}
   .eval-badge.tag-count{display:block;width:fit-content;margin:8px 0 0;}
+  .eval-badge.tag-done{background:rgba(28,138,90,0.08);color:var(--green);}
+  .eval-badge.tag-absent{background:rgba(232,25,75,0.07);color:var(--rose-2);}
+  .toggle.toggle-lock.on{background:var(--navy-2);}
+  .absents-panel{margin-top:12px;padding-top:12px;border-top:1px dashed var(--line);}
+  .absent-row{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:9px 12px;background:var(--cream);border-radius:8px;margin-bottom:6px;font-size:13px;color:var(--navy);flex-wrap:wrap;}
+  .criteria-picker{max-height:190px;overflow-y:auto;border:1.5px solid var(--line);border-radius:10px;padding:12px 14px;background:var(--cream);margin-top:8px;}
+  .criteria-picker-comp{font-size:11.5px;font-weight:700;color:var(--navy);margin:10px 0 5px;text-transform:uppercase;letter-spacing:0.02em;}
+  .criteria-picker-comp:first-child{margin-top:0;}
+  .criteria-picker-item{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--ink);padding:4px 0;cursor:pointer;}
+  .criteria-picker-item input{flex-shrink:0;accent-color:var(--rose-2);width:15px;height:15px;cursor:pointer;}
   .competence-title{font-family:'Sora',sans-serif;font-weight:700;font-size:14.5px;color:var(--navy);}
   .theme-accordion{border:1.5px solid var(--line);border-radius:16px;padding:16px 18px;margin-bottom:16px;}
   .theme-accordion-header{display:flex;align-items:center;justify-content:space-between;gap:12px;cursor:pointer;user-select:none;}
@@ -256,11 +266,15 @@
         <div class="inline-form hidden" id="evalForm">
           <div class="form-row">
             <input type="text" id="newEvalName" placeholder="Nom de l'évaluation">
-            <select id="newEvalCompetence"></select>
+            <select id="newEvalCompetence" onchange="onNewEvalCompetenceChange()"></select>
           </div>
           <div class="form-row">
             <input type="number" id="newEvalCoef" placeholder="Coefficient" min="0.5" step="0.5" value="1">
             <input type="date" id="newEvalDate">
+          </div>
+          <div>
+            <div class="section-label" style="margin-bottom:0;">Critères de performance évalués</div>
+            <div class="criteria-picker" id="newEvalCriteriaPicker"></div>
           </div>
           <button class="btn btn-primary btn-sm" onclick="addEvaluation()">Ajouter l'évaluation</button>
         </div>
@@ -379,9 +393,9 @@ let CLASSES = [
       {id:"s3", prenom:"Inès", nom:"Bernard", code:""},
     ],
     evaluations:[
-      {id:"e1", competenceId:"comp1", nom:"QCM Customer Journey Mapping", active:true, coefficient:1, date:"2025-10-15"},
-      {id:"e2", competenceId:"comp1", nom:"QCM Marketing Automation", active:false, coefficient:1, date:null},
-      {id:"e3", competenceId:"comp7", nom:"Étude de cas prospection B2B", active:true, coefficient:2, date:"2026-03-10"},
+      {id:"e1", competenceId:"comp1", nom:"QCM Customer Journey Mapping", active:true, coefficient:1, date:"2025-10-15", locked:true, unlockedStudentIds:[], criteriaIds:["cr1","cr2","cr5"]},
+      {id:"e2", competenceId:"comp1", nom:"QCM Marketing Automation", active:false, coefficient:1, date:null, locked:false, unlockedStudentIds:[], criteriaIds:["cr3","cr4","cr6"]},
+      {id:"e3", competenceId:"comp7", nom:"Étude de cas prospection B2B", active:true, coefficient:2, date:"2026-03-10", locked:false, unlockedStudentIds:[], criteriaIds:["cr31","cr32","cr38"]},
     ],
     grades:{
       "s1":{"e1":16.5,"e2":null,"e3":14},
@@ -401,8 +415,8 @@ let CLASSES = [
       {id:"s5", prenom:"Tom", nom:"Petit", code:"TOM-663"},
     ],
     evaluations:[
-      {id:"e4", competenceId:"comp2", nom:"Cas managérial : conflit d'équipe", active:true, coefficient:2, date:"2025-11-05"},
-      {id:"e5", competenceId:"comp2", nom:"QCM techniques de management", active:true, coefficient:1, date:"2026-04-20"},
+      {id:"e4", competenceId:"comp2", nom:"Cas managérial : conflit d'équipe", active:true, coefficient:2, date:"2025-11-05", locked:false, unlockedStudentIds:[], criteriaIds:["cr7","cr8"]},
+      {id:"e5", competenceId:"comp2", nom:"QCM techniques de management", active:true, coefficient:1, date:"2026-04-20", locked:false, unlockedStudentIds:[], criteriaIds:["cr9","cr10","cr11"]},
     ],
     grades:{
       "s4":{"e4":15,"e5":13.5},
@@ -590,6 +604,7 @@ let currentClassId = null;
 let navStack = ['home'];
 let expandedCategories = new Set();
 let expandedThemes = new Set();
+let expandedAbsents = new Set();
 
 function renderHome(){
   const list = document.getElementById('classList');
@@ -816,6 +831,10 @@ function renderEvals(){
   if(select){
     select.innerHTML = activeComps.map(cp=>`<option value="${cp.id}">${cp.nom}</option>`).join('');
   }
+  const newCriteriaPicker = document.getElementById('newEvalCriteriaPicker');
+  if(newCriteriaPicker){
+    newCriteriaPicker.innerHTML = renderCriteriaPicker(activeComps[0] || null, [], 'new');
+  }
 
   if(activeComps.length===0){
     rows.innerHTML = '<p style="font-size:13px;color:#8a8fa3;">Aucune compétence active pour l\'instant — active-en une dans l\'onglet <b>Paramètres</b> pour pouvoir y rattacher des évaluations.</p>';
@@ -899,17 +918,73 @@ function evalBadgesHtml(c, ev){
   return html;
 }
 
+function getEvalCompletionStats(c, ev){
+  const total = c.students.length;
+  const absentStudents = c.students.filter(s=>{
+    const g = c.grades[s.id] ? c.grades[s.id][ev.id] : null;
+    return g===null || g===undefined;
+  });
+  const grades = c.students
+    .map(s=> c.grades[s.id] ? c.grades[s.id][ev.id] : null)
+    .filter(g=>g!==null && g!==undefined);
+  const classAvg = grades.length ? grades.reduce((a,b)=>a+b,0)/grades.length : null;
+  return { total, doneCount: total - absentStudents.length, absentStudents, classAvg };
+}
+
+// Liste à cocher des critères de performance d'UNE SEULE compétence — celle à laquelle l'évaluation est
+// rattachée (pas de critères d'une autre compétence : chaque évaluation ne coche que dans son périmètre).
+// prefix sert à générer des ids uniques (ex: 'new' pour le formulaire d'ajout, l'id de l'évaluation pour l'édition).
+function renderCriteriaPicker(comp, selectedIds, prefix){
+  if(!comp) return '<p style="font-size:12px;color:#8a8fa3;margin:0;">Choisis d\'abord une compétence.</p>';
+  return comp.criteres.map(cr=>{
+    const checked = (selectedIds||[]).includes(cr.id) ? 'checked' : '';
+    const inputId = `crit-${prefix}-${cr.id}`;
+    return `<label class="criteria-picker-item" for="${inputId}"><input type="checkbox" id="${inputId}" value="${cr.id}" ${checked}> ${cr.label}</label>`;
+  }).join('');
+}
+
+function getCheckedCriteriaIds(prefix){
+  return Array.from(document.querySelectorAll(`[id^="crit-${prefix}-"]`)).filter(el=>el.checked).map(el=>el.value);
+}
+
+// Rafraîchit la liste des critères cochables quand on change la compétence choisie dans le formulaire d'ajout
+function onNewEvalCompetenceChange(){
+  const c = CLASSES.find(x=>x.id===currentClassId);
+  const competenceId = document.getElementById('newEvalCompetence').value;
+  const comp = getActiveCompetences(c).find(cp=>cp.id===competenceId);
+  document.getElementById('newEvalCriteriaPicker').innerHTML = renderCriteriaPicker(comp, [], 'new');
+}
+
 function evalRowHtml(c, ev){
+  const stats = getEvalCompletionStats(c, ev);
+  const isAbsentsExpanded = expandedAbsents.has(ev.id);
+
+  const doneBadge = stats.total>0 ? `<span class="eval-badge tag-done">${stats.doneCount}/${stats.total} réalisé(s)</span>` : '';
+  const absentBadge = stats.absentStudents.length>0 ? `<span class="eval-badge tag-absent pill-clickable" onclick="event.stopPropagation(); toggleAbsentsList('${ev.id}')">${stats.absentStudents.length} absent(s)</span>` : '';
+
+  const absentsListHtml = stats.absentStudents.length ? stats.absentStudents.map(s=>{
+    const isUnlocked = (ev.unlockedStudentIds||[]).includes(s.id);
+    return `
+      <div class="absent-row">
+        <span>${s.prenom} ${s.nom}${isUnlocked ? ' <b style="color:var(--green);">— débloqué(e)</b>' : ''}</span>
+        <button class="btn btn-outline btn-sm" onclick="toggleStudentUnlock('${ev.id}','${s.id}')">${isUnlocked ? 'Reverrouiller' : 'Débloquer pour repasser'}</button>
+      </div>
+    `;
+  }).join('') : '';
+
   return `
     <div class="eval-row" style="flex-direction:column;align-items:stretch;">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;">
         <div class="eval-info">
           <div class="nom">${ev.nom}</div>
-          <div style="margin-top:4px;">${evalBadgesHtml(c, ev)}</div>
+          <div style="margin-top:4px;">${evalBadgesHtml(c, ev)}${doneBadge}${absentBadge}</div>
+          <div style="margin-top:6px;font-size:12.5px;color:#8a8fa3;">Moyenne de la classe : <b style="color:var(--navy);">${stats.classAvg!==null ? stats.classAvg.toFixed(1)+'/20' : '—'}</b></div>
         </div>
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
           <div class="toggle ${ev.active?'on':''}" onclick="toggleEval('${ev.id}')"><div class="knob"></div></div>
           <div class="toggle-label">${ev.active?'Activé pour la classe':'Désactivé'}</div>
+          <div class="toggle toggle-lock ${ev.locked?'on':''}" onclick="toggleEvalLocked('${ev.id}')"><div class="knob"></div></div>
+          <div class="toggle-label">${ev.locked?'Verrouillée':'Non verrouillée'}</div>
           <button class="btn btn-outline btn-sm" onclick="toggleEvalEdit('${ev.id}')">Modifier</button>
         </div>
       </div>
@@ -919,11 +994,16 @@ function evalRowHtml(c, ev){
           <input type="number" id="evalEditCoef-${ev.id}" value="${ev.coefficient||1}" min="0.5" step="0.5" placeholder="Coefficient">
           <input type="date" id="evalEditDate-${ev.id}" value="${ev.date||''}">
         </div>
+        <div>
+          <div class="section-label" style="margin-bottom:0;">Critères de performance évalués</div>
+          <div class="criteria-picker">${renderCriteriaPicker(getCompetence(c.filiereId, ev.competenceId), ev.criteriaIds, 'edit-'+ev.id)}</div>
+        </div>
         <div style="display:flex;gap:8px;">
           <button class="btn btn-primary btn-sm" onclick="saveEvalEdit('${ev.id}')">Enregistrer</button>
           <button class="btn btn-outline btn-sm" onclick="toggleEvalEdit('${ev.id}')">Annuler</button>
         </div>
       </div>
+      ${stats.absentStudents.length ? `<div class="absents-panel ${isAbsentsExpanded?'':'hidden'}" id="absents-${ev.id}">${absentsListHtml}</div>` : ''}
     </div>
   `;
 }
@@ -942,6 +1022,7 @@ function saveEvalEdit(evalId){
   ev.nom = newName;
   ev.coefficient = newCoef;
   ev.date = newDate;
+  ev.criteriaIds = getCheckedCriteriaIds('edit-'+evalId);
   renderEvals();
   renderStats();
 }
@@ -959,15 +1040,39 @@ function toggleEval(evalId){
   renderEvals();
 }
 
+function toggleEvalLocked(evalId){
+  const c = CLASSES.find(x=>x.id===currentClassId);
+  const ev = c.evaluations.find(e=>e.id===evalId);
+  ev.locked = !ev.locked;
+  renderEvals();
+}
+
+function toggleAbsentsList(evalId){
+  if(expandedAbsents.has(evalId)) expandedAbsents.delete(evalId);
+  else expandedAbsents.add(evalId);
+  renderEvals();
+}
+
+function toggleStudentUnlock(evalId, studentId){
+  const c = CLASSES.find(x=>x.id===currentClassId);
+  const ev = c.evaluations.find(e=>e.id===evalId);
+  if(!ev.unlockedStudentIds) ev.unlockedStudentIds = [];
+  const idx = ev.unlockedStudentIds.indexOf(studentId);
+  if(idx === -1) ev.unlockedStudentIds.push(studentId);
+  else ev.unlockedStudentIds.splice(idx, 1);
+  renderEvals();
+}
+
 function addEvaluation(){
   const name = document.getElementById('newEvalName').value.trim();
   const competenceId = document.getElementById('newEvalCompetence').value;
   const coefficient = parseFloat(document.getElementById('newEvalCoef').value) || 1;
   const date = document.getElementById('newEvalDate').value || null;
+  const criteriaIds = getCheckedCriteriaIds('new');
   if(!name || !competenceId) return;
   const c = CLASSES.find(x=>x.id===currentClassId);
   const id = 'e'+Date.now();
-  c.evaluations.push({id, competenceId, nom:name, active:false, coefficient, date});
+  c.evaluations.push({id, competenceId, nom:name, active:false, coefficient, date, locked:false, unlockedStudentIds:[], criteriaIds});
   c.students.forEach(s=>{ if(!c.grades[s.id]) c.grades[s.id]={}; c.grades[s.id][id]=null; });
   document.getElementById('newEvalName').value = '';
   document.getElementById('newEvalCoef').value = '1';
@@ -1159,17 +1264,22 @@ function getMasteryLevel(avg){
   return MASTERY_LEVELS.find(l=>avg>=l.min && avg<l.max) || MASTERY_LEVELS[MASTERY_LEVELS.length-1];
 }
 
-// Toute évaluation nourrit, avec sa note, chacun des critères de la compétence à laquelle elle est rattachée
-// (pas encore de sélection fine critère par critère sur une évaluation — voir étape 2 du chantier référentiel).
+// Une évaluation ne peut cocher que des critères de SA PROPRE compétence (ev.criteriaIds). Pour les évaluations
+// créées avant l'ajout de ce réglage fin (criteriaIds absent), on retombe sur l'ancien comportement : tous les
+// critères de sa compétence.
 function computeCriteresMastery(c, studentId, sem){
   const flat = getFlatCompetences(c.filiereId);
   const results = [];
   flat.forEach(comp=>{
     if(!(c.competencesActives||[]).includes(comp.id)) return;
     if(!(c.themesActifs||[]).includes(comp.themeId)) return;
-    const compEvals = c.evaluations.filter(ev=>ev.competenceId===comp.id && (!sem || getEvalSemester(c, ev)===sem));
     comp.criteres.forEach(crit=>{
-      const grades = compEvals
+      const relevantEvals = c.evaluations.filter(ev=>{
+        if(sem && getEvalSemester(c, ev)!==sem) return false;
+        const critIds = (ev.criteriaIds && ev.criteriaIds.length) ? ev.criteriaIds : (ev.competenceId===comp.id ? comp.criteres.map(x=>x.id) : []);
+        return critIds.includes(crit.id);
+      });
+      const grades = relevantEvals
         .map(ev=> c.grades[studentId] ? c.grades[studentId][ev.id] : null)
         .filter(g=>g!==null && g!==undefined);
       const avg = grades.length ? grades.reduce((a,b)=>a+b,0)/grades.length : null;
