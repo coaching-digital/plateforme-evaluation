@@ -144,6 +144,7 @@
 </head>
 <body>
 
+<div class="banner">🧪 Maquette — <b>connexion de démo</b> ci-dessous, aucune vraie donnée</div>
 
 <div class="app">
   <div class="brand">Plateforme <span>Évaluation</span></div>
@@ -255,21 +256,22 @@ function showDashboard(classe, student){
 
   const bySubject = {};
   classe.evaluations.forEach((ev,i)=>{
-    if(!bySubject[ev.matiere]) bySubject[ev.matiere] = {desc: ev.matiereDesc || '', items: []};
-    bySubject[ev.matiere].items.push({...ev, index:i});
+    const key = ev.matiere || '__non_classees__';
+    if(!bySubject[key]) bySubject[key] = {title: ev.matiere || 'Autres évaluations', desc: ev.matiereDesc || '', items: []};
+    bySubject[key].items.push({...ev, index:i});
   });
 
   const container = document.getElementById('studentSubjects');
   container.innerHTML = '';
   const accentColors = ['#F4894A', '#E8194B', '#0D1F3C'];
   let subjectIndex = 0;
-  Object.keys(bySubject).forEach(subject=>{
+  Object.keys(bySubject).forEach(subjectKey=>{
     const group = document.createElement('div');
     group.className = 'subject-group';
     group.style.setProperty('--accent', accentColors[subjectIndex % accentColors.length]);
     subjectIndex++;
-    let html = `<div class="subject-title">${subject}</div><div class="subject-desc">${bySubject[subject].desc}</div>`;
-    bySubject[subject].items.forEach(ev=>{
+    let html = `<div class="subject-title">${bySubject[subjectKey].title}</div><div class="subject-desc">${bySubject[subjectKey].desc}</div>`;
+    bySubject[subjectKey].items.forEach(ev=>{
       const g = studentGrades[ev.index];
       const hasGrade = g !== null && g !== undefined;
       if(hasGrade){
