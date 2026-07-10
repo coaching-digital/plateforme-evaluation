@@ -99,6 +99,11 @@
   .modal-eval-list{list-style:none;padding:0;margin:0 0 20px;max-height:160px;overflow-y:auto;}
   .modal-eval-list li{font-size:13.5px;color:var(--ink);padding:9px 12px;background:var(--cream);border-radius:8px;margin-bottom:6px;}
   .modal-actions{display:flex;justify-content:flex-end;gap:10px;flex-wrap:wrap;}
+  .category-head-clickable{cursor:pointer;user-select:none;}
+  .category-chevron{font-size:20px;color:#8a8fa3;flex-shrink:0;transition:transform .2s ease;margin-top:2px;}
+  .category-chevron.expanded{transform:rotate(90deg);color:var(--rose-2);}
+  .eval-items-container{margin-top:12px;}
+  .eval-items-container.hidden{display:none !important;margin-top:0;}
   .btn-danger{background:var(--rose-2);color:white;}
   .btn-danger:hover{background:var(--rose);}
   .highlight-card{border-radius:16px;padding:18px 20px;border:1.5px solid var(--line);}
@@ -141,6 +146,8 @@
 </style>
 </head>
 <body>
+
+<div class="banner">🧪 Maquette avec données fictives — <b>rien n'est encore connecté</b> à un vrai back-end</div>
 
 <div class="app">
   <div class="top">
@@ -291,6 +298,7 @@ let CLASSES = [
 
 let currentClassId = null;
 let navStack = ['home'];
+let expandedCategories = new Set();
 
 function renderHome(){
   const list = document.getElementById('classList');
@@ -464,49 +472,47 @@ function renderEvals(){
   }
   c.categories.forEach(cat=>{
     const catEvals = c.evaluations.filter(ev=>ev.categoryId===cat.id);
+    const isExpanded = expandedCategories.has(cat.id);
     const block = document.createElement('div');
     block.className = 'category-block';
-    let html = `
-      <div class="category-head">
+    let itemsHtml = '';
+    if(catEvals.length===0){
+      itemsHtml = '<p style="font-size:12.5px;color:#c9ccd6;">Aucune évaluation dans cette catégorie pour l\'instant.</p>';
+    } else {
+      catEvals.forEach(ev=>{
+        itemsHtml += `
+          <div class="eval-row">
+            <div class="eval-info"><div class="nom">${ev.nom}</div></div>
+            <div style="display:flex;align-items:center;">
+              <div class="toggle ${ev.active?'on':''}" onclick="toggleEval('${ev.id}')"><div class="knob"></div></div>
+              <div class="toggle-label">${ev.active?'Activé pour la classe':'Désactivé'}</div>
+            </div>
+          </div>
+        `;
+      });
+    }
+    block.innerHTML = `
+      <div class="category-head category-head-clickable" onclick="toggleCategoryEvals('${cat.id}')">
         <div>
-          <div class="category-name">${cat.nom}</div>
+          <div class="category-name">${cat.nom} <span style="color:#c9ccd6;font-weight:600;">(${catEvals.length})</span></div>
           <div class="category-desc">${cat.description || ''}</div>
         </div>
+        <div class="category-chevron ${isExpanded?'expanded':''}">›</div>
       </div>
+      <div class="eval-items-container ${isExpanded?'':'hidden'}" id="evalItems-${cat.id}">${itemsHtml}</div>
     `;
-    if(catEvals.length===0){
-      html += '<p style="font-size:12.5px;color:#c9ccd6;margin-top:12px;">Aucune évaluation dans cette catégorie pour l\'instant.</p>';
-    }
-    catEvals.forEach(ev=>{
-      html += `
-        <div class="eval-row">
-          <div class="eval-info"><div class="nom">${ev.nom}</div></div>
-          <div style="display:flex;align-items:center;">
-            <div class="toggle ${ev.active?'on':''}" onclick="toggleEval('${ev.id}')"><div class="knob"></div></div>
-            <div class="toggle-label">${ev.active?'Activé pour la classe':'Désactivé'}</div>
-          </div>
-        </div>
-      `;
-    });
-    block.innerHTML = html;
     rows.appendChild(block);
   });
 
   if(unclassified.length > 0){
+    const isExpanded = expandedCategories.has('__unclassified__');
     const block = document.createElement('div');
     block.className = 'category-block';
     block.style.borderStyle = 'dashed';
-    let html = `
-      <div class="category-head">
-        <div>
-          <div class="category-name">Non classées</div>
-          <div class="category-desc">Évaluations dont la catégorie a été supprimée. Range-les dans une catégorie existante, crées-en une nouvelle directement ici, ou laisse-les ici pour l'instant — elles restent visibles et faisables par les apprenants.</div>
-        </div>
-      </div>
-    `;
+    let itemsHtml = '';
     unclassified.forEach(ev=>{
       const options = c.categories.map(cat=>`<option value="${cat.id}">${cat.nom}</option>`).join('');
-      html += `
+      itemsHtml += `
         <div class="eval-row" style="flex-direction:column;align-items:stretch;">
           <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;">
             <div class="eval-info"><div class="nom">${ev.nom}</div></div>
@@ -529,7 +535,16 @@ function renderEvals(){
         </div>
       `;
     });
-    block.innerHTML = html;
+    block.innerHTML = `
+      <div class="category-head category-head-clickable" onclick="toggleCategoryEvals('__unclassified__')">
+        <div>
+          <div class="category-name">Non classées <span style="color:#c9ccd6;font-weight:600;">(${unclassified.length})</span></div>
+          <div class="category-desc">Évaluations dont la catégorie a été supprimée. Range-les dans une catégorie existante, crées-en une nouvelle directement ici, ou laisse-les ici pour l'instant — elles restent visibles et faisables par les apprenants.</div>
+        </div>
+        <div class="category-chevron ${isExpanded?'expanded':''}">›</div>
+      </div>
+      <div class="eval-items-container ${isExpanded?'':'hidden'}" id="evalItems-unclassified">${itemsHtml}</div>
+    `;
     rows.appendChild(block);
   }
 }
@@ -560,6 +575,12 @@ function createCategoryAndAssign(evalId){
   const ev = c.evaluations.find(e=>e.id===evalId);
   ev.categoryId = newCat.id;
   renderCategories();
+  renderEvals();
+}
+
+function toggleCategoryEvals(catId){
+  if(expandedCategories.has(catId)) expandedCategories.delete(catId);
+  else expandedCategories.add(catId);
   renderEvals();
 }
 
