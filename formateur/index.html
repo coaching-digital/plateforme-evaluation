@@ -44,6 +44,8 @@
   .btn-primary{background:var(--navy);color:white;}
   .btn-primary:hover{background:var(--navy-2);}
   .btn-outline{background:white;color:var(--navy);border:1.5px solid var(--line);}
+  .btn-tint-orange{background:rgba(244,137,74,0.08);color:var(--orange);border:1.5px solid rgba(244,137,74,0.3);}
+  .btn-tint-orange:hover{background:rgba(244,137,74,0.15);border-color:var(--orange);}
   .btn-outline:hover{border-color:var(--navy);}
   .btn-sm{padding:8px 14px;font-size:12.5px;}
   .add-class-btn{width:100%;background:transparent;border:1.5px dashed var(--line);border-radius:20px;padding:18px;text-align:center;color:#8a8fa3;font-weight:700;font-family:'Sora',sans-serif;font-size:14px;cursor:pointer;}
@@ -91,7 +93,7 @@
   .highlight-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px;}
   .modal-overlay{position:fixed;inset:0;background:rgba(13,31,60,0.45);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px;}
   .modal-overlay.hidden{display:none !important;}
-  .modal-box{background:white;border-radius:20px;padding:28px 30px;max-width:440px;width:100%;box-shadow:0 12px 40px rgba(13,31,60,0.25);}
+  .modal-box{background:white;border-radius:20px;padding:28px 30px;max-width:440px;width:100%;box-shadow:0 12px 40px rgba(13,31,60,0.25);max-height:88vh;overflow-y:auto;}
   .modal-title{font-family:'Sora',sans-serif;font-weight:700;font-size:18px;color:var(--navy);margin-bottom:16px;}
   .modal-warning{background:rgba(244,137,74,0.08);border:1px solid rgba(244,137,74,0.25);border-radius:12px;padding:12px 14px;font-size:13.5px;color:var(--navy-2);margin-bottom:16px;line-height:1.5;}
   .modal-recap{font-size:13.5px;color:#5c6178;margin-bottom:10px;line-height:1.5;}
@@ -126,6 +128,23 @@
   .eval-badge.semester-s1{background:rgba(244,137,74,0.12);color:var(--orange);}
   .eval-badge.muted{background:transparent;color:#c9ccd6;font-weight:600;}
   .filter-pill-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+  .posture-grid{border:1.5px solid var(--line);border-radius:16px;overflow:hidden;margin-bottom:16px;}
+  .posture-row{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-top:1px solid var(--line);gap:10px;flex-wrap:wrap;}
+  .posture-row:first-child{border-top:none;}
+  .posture-row-label{font-size:13px;font-weight:600;color:var(--navy);flex:1;min-width:150px;}
+  .posture-options{display:flex;gap:6px;flex-wrap:wrap;}
+  .posture-option{font-family:'Sora',sans-serif;font-size:11px;font-weight:700;padding:8px 11px;border-radius:8px;border:1.5px solid var(--line);background:var(--cream);color:#8a8fa3;cursor:pointer;user-select:none;}
+  .posture-option:hover{border-color:var(--orange);}
+  .posture-option.selected-TI{background:rgba(232,25,75,0.12);border-color:var(--rose-2);color:var(--rose-2);}
+  .posture-option.selected-I{background:rgba(244,137,74,0.12);border-color:var(--orange);color:var(--orange);}
+  .posture-option.selected-S{background:rgba(13,31,60,0.08);border-color:var(--navy-2);color:var(--navy-2);}
+  .posture-option.selected-TS{background:rgba(28,138,90,0.12);border-color:var(--green);color:var(--green);}
+  .posture-summary{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;background:var(--cream);border-radius:14px;margin-bottom:14px;flex-wrap:wrap;gap:10px;}
+  .posture-score-num{font-family:'Sora',sans-serif;font-weight:800;font-size:28px;color:var(--navy);}
+  .posture-score-label{font-size:12px;color:#8a8fa3;}
+  .posture-legend{font-size:11px;color:#8a8fa3;display:flex;gap:14px;flex-wrap:wrap;margin-bottom:16px;}
+  .posture-legend span{display:inline-flex;align-items:center;gap:5px;}
+  .posture-legend-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
   .coef-subrow th{font-weight:500 !important;color:#8a8fa3 !important;font-size:11px !important;border-bottom:1.5px solid var(--line);padding-top:0 !important;}
   .bulletin-header-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px;}
   .bulletin-header-row .bulletin-title{margin-bottom:0;}
@@ -273,6 +292,36 @@
       <div id="studentDetailModalBody"></div>
       <div class="modal-actions">
         <button class="btn btn-outline" onclick="closeStudentDetailModal()">Fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay hidden" id="studentBulletinModalOverlay">
+    <div class="modal-box" style="max-width:520px;">
+      <div class="modal-title" id="studentBulletinModalTitle"></div>
+      <div id="studentBulletinModalBody"></div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="closeStudentBulletinModal()">Fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay hidden" id="postureProModalOverlay">
+    <div class="modal-box" style="max-width:640px;">
+      <div class="modal-title" id="postureProModalTitle"></div>
+      <div id="postureProModalBody"></div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="closePostureProModal()">Fermer</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-overlay hidden" id="bilanModalOverlay">
+    <div class="modal-box">
+      <div class="modal-title">Bilan semestriel</div>
+      <div class="modal-recap">Cette fonctionnalité arrive bientôt : elle permettra d'envoyer par email un bilan de fin de semestre, avec les éléments qu'on définira ensemble.</div>
+      <div class="modal-actions">
+        <button class="btn btn-outline" onclick="closeBilanModal()">Fermer</button>
       </div>
     </div>
   </div>
@@ -871,6 +920,36 @@ const SEMESTER_LABELS = {
   s2: {name:'Semestre 2', interval:'Du 1er février au 30 juin'}
 };
 
+const POSTURE_CRITERIA = [
+  {id:'ponctualite', label:'Ponctualité'},
+  {id:'presence', label:'Présence'},
+  {id:'implication', label:"Implication dans l'apprentissage"},
+  {id:'echanges', label:'Échanges avec le formateur'},
+  {id:'qualite', label:'Qualité des rendus'},
+  {id:'remarques', label:'Prise en compte des remarques'},
+  {id:'volonte', label:'Volonté de progresser'}
+];
+
+const POSTURE_LEVELS = [
+  {id:'TI', label:'Très insatisfaisant', points:0},
+  {id:'I', label:'Insatisfaisant', points:1},
+  {id:'S', label:'Satisfaisant', points:2},
+  {id:'TS', label:'Très satisfaisant', points:3}
+];
+
+const POSTURE_COEF = 2;
+
+function computePostureNote(criteria){
+  const answered = POSTURE_CRITERIA.filter(c => criteria[c.id]);
+  if(answered.length < POSTURE_CRITERIA.length) return null; // pas encore complet
+  const total = answered.reduce((sum, c)=>{
+    const level = POSTURE_LEVELS.find(l=>l.id===criteria[c.id]);
+    return sum + (level ? level.points : 0);
+  }, 0);
+  const maxPoints = POSTURE_CRITERIA.length * 3;
+  return (total / maxPoints) * 20;
+}
+
 function computeStudentAveragesForEvals(c, evals){
   return c.students.map(s=>{
     const items = evals.map(ev=>{
@@ -1046,7 +1125,9 @@ function renderStudents(){
       <div class="code-box">
         <div class="code-chip ${s.code?'':'empty'}">${s.code || 'Aucun code généré'}</div>
         <button class="btn btn-outline btn-sm" onclick="generateCode('${s.id}')">${s.code?'Régénérer':'Générer un code'}</button>
-        <button class="btn btn-outline btn-sm" onclick="previewStudent('${s.id}')">Voir sa vue</button>
+        <button class="btn btn-tint-orange btn-sm" onclick="openStudentBulletinModal('${s.id}')">Bulletin semestriel</button>
+        <button class="btn btn-tint-orange btn-sm" onclick="openPostureProModal('${s.id}')">Posture professionnelle</button>
+        <button class="btn btn-tint-orange btn-sm" onclick="openBilanModal('${s.id}')">Bilan semestriel</button>
       </div>
     `;
     rows.appendChild(row);
@@ -1060,6 +1141,272 @@ function generateCode(studentId){
   const num = Math.floor(100 + Math.random()*900);
   s.code = prefix + '-' + num;
   renderStudents();
+}
+
+function getPosturePro(c, studentId, sem){
+  if(!c.posturePro) c.posturePro = {};
+  if(!c.posturePro[studentId]) c.posturePro[studentId] = {s1:{criteria:{}, coef:POSTURE_COEF}, s2:{criteria:{}, coef:POSTURE_COEF}};
+  return c.posturePro[studentId][sem];
+}
+
+function getPostureNoteForSemester(c, studentId, sem){
+  const p = getPosturePro(c, studentId, sem);
+  return {note: computePostureNote(p.criteria), coef: p.coef || 1};
+}
+
+// ---------- Bulletin semestriel individuel ----------
+let pendingBulletinStudentId = null;
+let pendingBulletinSemester = null;
+
+function openStudentBulletinModal(studentId){
+  const c = CLASSES.find(x=>x.id===currentClassId);
+  const s = c.students.find(x=>x.id===studentId);
+  pendingBulletinStudentId = studentId;
+  pendingBulletinSemester = null;
+  document.getElementById('studentBulletinModalTitle').textContent = 'Bulletin de ' + s.prenom + ' ' + s.nom;
+  renderStudentBulletinModalBody();
+  document.getElementById('studentBulletinModalOverlay').classList.remove('hidden');
+}
+
+function closeStudentBulletinModal(){
+  document.getElementById('studentBulletinModalOverlay').classList.add('hidden');
+  pendingBulletinStudentId = null;
+  pendingBulletinSemester = null;
+}
+
+function chooseStudentBulletinSemester(sem){
+  pendingBulletinSemester = sem;
+  renderStudentBulletinModalBody();
+}
+
+function getStudentSemesterItems(c, s, sem){
+  const evalsInSem = c.evaluations.filter(ev => getEvalSemester(c, ev) === sem);
+  const items = evalsInSem.map(ev=>{
+    const g = c.grades[s.id] ? c.grades[s.id][ev.id] : null;
+    return {name: ev.nom, grade: g, coef: ev.coefficient || 1};
+  });
+  const posture = getPostureNoteForSemester(c, s.id, sem);
+  if(posture.note !== null && posture.note !== undefined){
+    items.push({name: 'Posture professionnelle', grade: Math.round(posture.note*10)/10, coef: posture.coef || 1});
+  }
+  return items;
+}
+
+function renderStudentBulletinModalBody(){
+  const body = document.getElementById('studentBulletinModalBody');
+
+  if(!pendingBulletinSemester){
+    body.innerHTML = `
+      <p style="font-size:13.5px;color:#5c6178;margin-bottom:16px;">Choisis le semestre à consulter :</p>
+      <div class="highlight-row">
+        <button class="btn btn-outline" style="width:100%;padding:16px;" onclick="chooseStudentBulletinSemester('s1')">Semestre 1</button>
+        <button class="btn btn-outline" style="width:100%;padding:16px;" onclick="chooseStudentBulletinSemester('s2')">Semestre 2</button>
+      </div>
+    `;
+    return;
+  }
+
+  const c = CLASSES.find(x=>x.id===currentClassId);
+  const s = c.students.find(x=>x.id===pendingBulletinStudentId);
+  const sem = pendingBulletinSemester;
+  const items = getStudentSemesterItems(c, s, sem);
+  const completedItems = items.filter(it=>it.grade!==null && it.grade!==undefined);
+  const avg = completedItems.length ? weightedAverage(completedItems.map(it=>({grade:it.grade, coef:it.coef}))) : null;
+
+  const listHtml = items.map(it=>{
+    let dotColor, valueText, valueColor;
+    if(it.grade===null || it.grade===undefined){
+      dotColor = '#c9ccd6'; valueText = 'Pas encore fait'; valueColor = '#8a8fa3';
+    } else if(it.grade>=10){
+      dotColor = 'var(--green)'; valueText = it.grade+'/20'; valueColor = 'var(--green)';
+    } else {
+      dotColor = 'var(--rose-2)'; valueText = it.grade+'/20'; valueColor = 'var(--rose-2)';
+    }
+    return `
+      <div class="eval-detail-row">
+        <span><span class="eval-detail-dot" style="background:${dotColor};"></span>${it.name} <span style="color:#c9ccd6;font-size:11.5px;">(coef ${it.coef})</span></span>
+        <b style="color:${valueColor};">${valueText}</b>
+      </div>
+    `;
+  }).join('');
+
+  body.innerHTML = `
+    <div style="margin-bottom:12px;">
+      <span class="clickable-student-name" onclick="pendingBulletinSemester=null; renderStudentBulletinModalBody();">‹ Changer de semestre</span>
+    </div>
+    <div class="modal-recap">${SEMESTER_LABELS[sem].name} — ${SEMESTER_LABELS[sem].interval}</div>
+    <div class="modal-recap">Moyenne pondérée du semestre : <b>${avg!==null ? avg.toFixed(1)+'/20' : '—'}</b></div>
+    <div style="margin:14px 0;max-height:240px;overflow-y:auto;">
+      ${items.length ? listHtml : '<p style="font-size:13px;color:#8a8fa3;">Aucune évaluation datée sur ce semestre.</p>'}
+    </div>
+    <button class="btn btn-primary btn-sm" onclick="exportStudentBulletinPDF()">Exporter en PDF</button>
+  `;
+}
+
+function exportStudentBulletinPDF(){
+  const c = CLASSES.find(x=>x.id===currentClassId);
+  const s = c.students.find(x=>x.id===pendingBulletinStudentId);
+  const sem = pendingBulletinSemester;
+  if(!s || !sem) return;
+  const { jsPDF } = window.jspdf;
+
+  const items = getStudentSemesterItems(c, s, sem);
+  const completedItems = items.filter(it=>it.grade!==null && it.grade!==undefined);
+  const avg = completedItems.length ? weightedAverage(completedItems.map(it=>({grade:it.grade, coef:it.coef}))) : null;
+  const semInfo = SEMESTER_LABELS[sem];
+
+  const doc = new jsPDF({orientation: 'portrait'});
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(16);
+  doc.setTextColor(0,0,0);
+  doc.text(s.prenom + ' ' + s.nom, 14, 18);
+
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(10);
+  doc.setTextColor(100,100,100);
+  doc.text(c.name + ' — ' + semInfo.name + ' (' + semInfo.interval + ') — généré le ' + new Date().toLocaleDateString('fr-FR'), 14, 25);
+
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(11);
+  doc.setTextColor(0,0,0);
+  doc.text('Moyenne pondérée du semestre : ' + (avg!==null ? avg.toFixed(1)+'/20' : '—'), 14, 34);
+
+  const head = [['Évaluation', 'Coefficient', 'Note']];
+  const tableBody = items.map(it=>[it.name, String(it.coef), (it.grade===null||it.grade===undefined) ? '—' : it.grade+'/20']);
+
+  doc.autoTable({
+    head: head,
+    body: tableBody,
+    startY: 42,
+    styles:{font:'helvetica', fontSize:10, textColor:[0,0,0], cellPadding:5, lineColor:[200,200,200], lineWidth:0.1},
+    headStyles:{fillColor:[240,240,240], textColor:[0,0,0], fontStyle:'bold'},
+    alternateRowStyles:{fillColor:[250,250,250]}
+  });
+
+  const safeName = (s.prenom + '-' + s.nom).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+  doc.save('bulletin-' + safeName + '-' + sem + '.pdf');
+}
+
+// ---------- Posture professionnelle ----------
+let pendingPostureStudentId = null;
+let pendingPostureSemester = null;
+let pendingPostureCriteria = {};
+
+function openPostureProModal(studentId){
+  const c = CLASSES.find(x=>x.id===currentClassId);
+  const s = c.students.find(x=>x.id===studentId);
+  pendingPostureStudentId = studentId;
+  pendingPostureSemester = null;
+  document.getElementById('postureProModalTitle').textContent = 'Posture professionnelle — ' + s.prenom + ' ' + s.nom;
+  renderPostureProModalBody();
+  document.getElementById('postureProModalOverlay').classList.remove('hidden');
+}
+
+function closePostureProModal(){
+  document.getElementById('postureProModalOverlay').classList.add('hidden');
+  pendingPostureStudentId = null;
+  pendingPostureSemester = null;
+}
+
+function choosePostureSemester(sem){
+  const c = CLASSES.find(x=>x.id===currentClassId);
+  const stored = getPosturePro(c, pendingPostureStudentId, sem);
+  pendingPostureSemester = sem;
+  pendingPostureCriteria = {...stored.criteria};
+  renderPostureProModalBody();
+}
+
+function selectPostureLevel(criterionId, levelId){
+  pendingPostureCriteria[criterionId] = levelId;
+  renderPostureProModalBody();
+}
+
+function resetPostureGrid(){
+  pendingPostureCriteria = {};
+  renderPostureProModalBody();
+}
+
+function savePostureProModal(){
+  const c = CLASSES.find(x=>x.id===currentClassId);
+  if(!c.posturePro) c.posturePro = {};
+  if(!c.posturePro[pendingPostureStudentId]) c.posturePro[pendingPostureStudentId] = {s1:{criteria:{},coef:POSTURE_COEF}, s2:{criteria:{},coef:POSTURE_COEF}};
+  c.posturePro[pendingPostureStudentId][pendingPostureSemester] = {
+    criteria: {...pendingPostureCriteria},
+    coef: POSTURE_COEF
+  };
+  const savedNote = computePostureNote(pendingPostureCriteria);
+  pendingPostureSemester = null;
+  renderPostureProModalBody();
+  if(savedNote !== null){
+    alert('Note enregistrée : ' + savedNote.toFixed(1) + '/20 (coefficient ' + POSTURE_COEF + '). Elle est désormais intégrée au bulletin.');
+  }
+}
+
+function renderPostureProModalBody(){
+  const body = document.getElementById('postureProModalBody');
+
+  if(!pendingPostureSemester){
+    body.innerHTML = `
+      <p style="font-size:13.5px;color:#5c6178;margin-bottom:16px;">Choisis le semestre à évaluer :</p>
+      <div class="highlight-row">
+        <button class="btn btn-outline" style="width:100%;padding:16px;" onclick="choosePostureSemester('s1')">Semestre 1</button>
+        <button class="btn btn-outline" style="width:100%;padding:16px;" onclick="choosePostureSemester('s2')">Semestre 2</button>
+      </div>
+    `;
+    return;
+  }
+
+  const answeredCount = POSTURE_CRITERIA.filter(c => pendingPostureCriteria[c.id]).length;
+  const note = computePostureNote(pendingPostureCriteria);
+
+  const gridHtml = POSTURE_CRITERIA.map(crit => `
+    <div class="posture-row">
+      <div class="posture-row-label">${crit.label}</div>
+      <div class="posture-options">
+        ${POSTURE_LEVELS.map(level => `
+          <div class="posture-option ${pendingPostureCriteria[crit.id]===level.id ? 'selected-'+level.id : ''}"
+               onclick="selectPostureLevel('${crit.id}','${level.id}')" title="${level.label}">${level.id}</div>
+        `).join('')}
+      </div>
+    </div>
+  `).join('');
+
+  body.innerHTML = `
+    <div style="margin-bottom:12px;">
+      <span class="clickable-student-name" onclick="pendingPostureSemester=null; renderPostureProModalBody();">‹ Changer de semestre</span>
+      — ${SEMESTER_LABELS[pendingPostureSemester].name}
+    </div>
+    <div class="posture-summary">
+      <div>
+        <div class="posture-score-num">${note!==null ? note.toFixed(1)+'/20' : '—'}</div>
+        <div class="posture-score-label">${note!==null ? 'Score calculé' : 'En attente des évaluations'}</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:12px;color:#8a8fa3;margin-bottom:6px;">${answeredCount} / ${POSTURE_CRITERIA.length} renseignés</div>
+        <div style="font-size:12.5px;color:#8a8fa3;font-weight:600;">Coefficient : ${POSTURE_COEF}</div>
+      </div>
+    </div>
+    <div class="posture-grid">${gridHtml}</div>
+    <div class="posture-legend">
+      <span><span class="posture-legend-dot" style="background:var(--rose-2);"></span>TI = 0 pt</span>
+      <span><span class="posture-legend-dot" style="background:var(--orange);"></span>I = 1 pt</span>
+      <span><span class="posture-legend-dot" style="background:var(--navy-2);"></span>S = 2 pts</span>
+      <span><span class="posture-legend-dot" style="background:var(--green);"></span>TS = 3 pts</span>
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-outline btn-sm" onclick="resetPostureGrid()">↺ Réinitialiser</button>
+      <button class="btn btn-primary btn-sm" onclick="savePostureProModal()">Enregistrer</button>
+    </div>
+  `;
+}
+
+// ---------- Bilan semestriel (à venir) ----------
+function openBilanModal(studentId){
+  document.getElementById('bilanModalOverlay').classList.remove('hidden');
+}
+
+function closeBilanModal(){
+  document.getElementById('bilanModalOverlay').classList.add('hidden');
 }
 
 function addStudent(){
