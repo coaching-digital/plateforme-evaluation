@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mes évaluations</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --navy:#0D1F3C;
+    --navy-2:#1C2B4A;
+    --rose:#E8194B;
+    --rose-2:#FF006E;
+    --orange:#F4894A;
+    --cream:#FBF5EF;
+    --ink:#1a1a2e;
+    --line: rgba(13,31,60,0.10);
+    --green:#1c8a5a;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--cream);color:var(--ink);font-family:'Manrope', sans-serif;min-height:100vh;}
+  h1,h2,h3{font-family:'Sora', sans-serif;}
+
+  .banner{
+    background:var(--navy);color:rgba(255,255,255,0.85);text-align:center;
+    font-size:12.5px;padding:8px 16px;font-weight:600;letter-spacing:0.02em;
+  }
+  .banner b{color:white;}
+
+  .app{max-width:560px;margin:0 auto;padding:32px 20px 80px;}
+
+  .brand{
+    font-family:'Sora', sans-serif;font-weight:800;font-size:15px;letter-spacing:0.02em;
+    color:var(--navy);margin-bottom:24px;text-align:center;
+  }
+  .brand span{color:var(--rose-2);}
+
+  .card{
+    background:white;border-radius:20px;border:1px solid var(--line);
+    padding:32px 28px;box-shadow:0 1px 2px rgba(13,31,60,0.04);
+  }
+
+  /* ---------- LOGIN ---------- */
+  .login-eyebrow{
+    font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;
+    color:var(--rose-2);margin-bottom:10px;text-align:center;
+  }
+  .login-title{font-size:24px;color:var(--navy);margin:0 0 8px;text-align:center;}
+  .login-sub{font-size:14px;color:#8a8fa3;margin:0 0 28px;text-align:center;line-height:1.5;}
+
+  .field{margin-bottom:14px;}
+  .field label{display:block;font-size:12.5px;font-weight:700;color:var(--navy);margin-bottom:6px;}
+  .field input{
+    width:100%;padding:13px 14px;border:1.5px solid var(--line);border-radius:10px;
+    font-family:'Manrope',sans-serif;font-size:14.5px;color:var(--ink);background:var(--cream);
+  }
+  .field input:focus{outline:none;border-color:var(--orange);}
+  .field-row{display:flex;gap:12px;}
+  .field-row .field{flex:1;}
+
+  .btn{
+    font-family:'Sora', sans-serif;font-weight:700;font-size:15px;border:none;
+    border-radius:12px;padding:14px 26px;cursor:pointer;transition:transform .15s ease;
+  }
+  .btn:active{transform:scale(0.98);}
+  .btn-primary{background:var(--navy);color:white;}
+  .btn-primary:hover{background:var(--navy-2);}
+  .btn-full{width:100%;}
+
+  .login-error{
+    background:rgba(232,25,75,0.07);color:var(--rose-2);font-size:13px;font-weight:600;
+    padding:12px 14px;border-radius:10px;margin-bottom:16px;text-align:center;
+  }
+  .demo-hint{
+    margin-top:18px;text-align:center;font-size:12px;color:#b8bcc9;
+  }
+
+  /* ---------- DASHBOARD ---------- */
+  .student-hero{text-align:center;padding:8px 0 20px;}
+  .student-hero .promo{font-size:12px;font-weight:700;text-transform:uppercase;letter-spacing:0.05em;color:var(--rose-2);}
+  .student-hero h1{font-size:24px;color:var(--navy);margin:8px 0 20px;}
+  .progress-num{font-family:'Sora',sans-serif;font-weight:800;font-size:38px;color:var(--navy);}
+  .progress-label{font-size:13px;color:#8a8fa3;margin-bottom:16px;}
+  .progress-track{
+    width:100%;height:8px;background:var(--line);border-radius:999px;overflow:hidden;margin-top:6px;
+  }
+  .progress-fill{height:100%;background:var(--rose-2);border-radius:999px;transition:width .4s ease;}
+
+  .subject-group{
+    margin-top:18px;
+    background:white;
+    border:1.5px solid var(--line);
+    border-left:4px solid var(--accent, var(--orange));
+    border-radius:16px;
+    padding:20px 22px;
+  }
+  .subject-title{
+    font-size:11.5px;font-weight:700;text-transform:uppercase;letter-spacing:0.06em;
+    color:var(--orange);margin-bottom:8px;font-family:'Sora',sans-serif;
+  }
+  .subject-desc{font-size:12.5px;color:#8a8fa3;line-height:1.6;margin-bottom:16px;}
+  .eval-card{
+    display:flex;align-items:center;justify-content:space-between;
+    padding:16px 18px;border:1.5px solid var(--line);border-radius:14px;margin-bottom:10px;
+    background:var(--cream);
+  }
+  .eval-card:last-child{margin-bottom:0;}
+  .eval-card.locked{opacity:0.55;}
+  .eval-card .name{font-size:14.5px;font-weight:600;color:var(--navy);}
+  .status-tag{font-size:11.5px;font-weight:700;padding:4px 10px;border-radius:7px;flex-shrink:0;margin-left:12px;}
+  .status-tag.locked{background:rgba(13,31,60,0.06);color:#8a8fa3;}
+  .status-tag.open{background:rgba(232,25,75,0.08);color:var(--rose-2);}
+  .status-tag.done{background:rgba(28,138,90,0.10);color:var(--green);}
+
+  .eval-card.open{cursor:pointer;}
+  .eval-card.open:hover{border-color:var(--rose-2);}
+
+  .eval-card.done{flex-direction:column;align-items:stretch;gap:12px;}
+  .eval-card-top{display:flex;align-items:center;justify-content:space-between;}
+  .eval-actions{display:flex;gap:8px;flex-wrap:wrap;border-top:1px solid var(--line);padding-top:12px;}
+  .action-link{
+    font-family:'Sora',sans-serif;font-size:12.5px;font-weight:700;
+    padding:8px 14px;border-radius:9px;border:1.5px solid var(--line);
+    cursor:pointer;color:var(--navy);background:white;
+  }
+  .action-link:hover{border-color:var(--orange);}
+  .action-link.practice{color:var(--rose-2);border-color:rgba(232,25,75,0.25);}
+  .practice-badge{
+    font-size:10.5px;font-weight:700;background:var(--orange);color:white;
+    padding:2px 7px;border-radius:6px;margin-left:8px;vertical-align:middle;
+  }
+
+  .logout-row{text-align:center;margin-top:28px;}
+  .logout-link{font-size:13px;color:#8a8fa3;cursor:pointer;text-decoration:underline;}
+
+  .hidden{display:none !important;}
+
+  @media (max-width:480px){
+    .card{padding:26px 20px;}
+    .field-row{flex-direction:column;gap:14px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="banner">🧪 Maquette — <b>connexion de démo</b> ci-dessous, aucune vraie donnée</div>
+
+<div class="app">
+  <div class="brand">Plateforme <span>Évaluation</span></div>
+
+  <!-- ============ ÉCRAN DE CONNEXION ============ -->
+  <div id="viewLogin" class="card">
+    <div class="login-eyebrow">Espace apprenant</div>
+    <h1 class="login-title">Mes évaluations</h1>
+    <p class="login-sub">Connecte-toi avec ton prénom, ton nom et le code de ta promo pour accéder à ton suivi.</p>
+
+    <div id="loginError" class="login-error hidden"></div>
+
+    <div class="field-row">
+      <div class="field">
+        <label>Prénom</label>
+        <input type="text" id="loginFirst" placeholder="Camille">
+      </div>
+      <div class="field">
+        <label>Nom</label>
+        <input type="text" id="loginLast" placeholder="Dupont">
+      </div>
+    </div>
+    <div class="field">
+      <label>Code promo</label>
+      <input type="text" id="loginCode" placeholder="Ex : NDRC1-2026">
+    </div>
+
+    <button class="btn btn-primary btn-full" onclick="tryLogin()">Accéder à mon espace</button>
+
+    <div class="demo-hint">Pour tester : Camille / Dupont / NDRC1-2026</div>
+  </div>
+
+  <!-- ============ TABLEAU DE BORD APPRENANT ============ -->
+  <div id="viewDashboard" class="hidden">
+    <div class="card student-hero">
+      <div class="promo" id="studentPromo"></div>
+      <h1 id="studentGreeting"></h1>
+      <div class="progress-num" id="studentProgressNum"></div>
+      <div class="progress-label" id="studentProgressLabel"></div>
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+    </div>
+    <div id="studentSubjects"></div>
+    <div class="logout-row"><span class="logout-link" onclick="logout()">Se déconnecter</span></div>
+  </div>
+</div>
+
+<script>
+// ---------------- DONNÉES DE DÉMO ----------------
+const CLASSES = {
+  "NDRC1-2026": {
+    name:"BTS NDRC — 1ère année",
+    students:[
+      {prenom:"Camille", nom:"Dupont", id:"s1"},
+      {prenom:"Lucas", nom:"Martin", id:"s2"},
+    ],
+    evaluations:[
+      {matiere:"Bloc 2 — Relation client à distance", matiereDesc:"Ce module évalue ta capacité à cartographier un parcours client et à concevoir des scénarios de marketing automation cohérents avec la stratégie commerciale.", nom:"QCM Customer Journey Mapping", active:true},
+      {matiere:"Bloc 2 — Relation client à distance", matiereDesc:"Ce module évalue ta capacité à cartographier un parcours client et à concevoir des scénarios de marketing automation cohérents avec la stratégie commerciale.", nom:"QCM Marketing Automation", active:false},
+      {matiere:"Bloc 1 — Cibler et prospecter", matiereDesc:"Ce module évalue ta capacité à identifier une cible commerciale pertinente et à construire une démarche de prospection adaptée.", nom:"Étude de cas prospection B2B", active:true},
+    ],
+    grades:{
+      "s1":{0:16.5, 1:null, 2:14},
+      "s2":{0:12, 1:null, 2:null},
+    }
+  }
+};
+
+function normalize(str){
+  return str.trim().toLowerCase();
+}
+
+function tryLogin(){
+  const first = document.getElementById('loginFirst').value.trim();
+  const last = document.getElementById('loginLast').value.trim();
+  const code = document.getElementById('loginCode').value.trim().toUpperCase();
+  const errorBox = document.getElementById('loginError');
+
+  const classe = CLASSES[code];
+  if(!classe){
+    errorBox.textContent = "Code promo introuvable. Vérifie l'orthographe auprès de ta formatrice.";
+    errorBox.classList.remove('hidden');
+    return;
+  }
+  const student = classe.students.find(s => normalize(s.prenom)===normalize(first) && normalize(s.nom)===normalize(last));
+  if(!student){
+    errorBox.textContent = "Prénom / nom introuvable dans cette promo. Vérifie l'orthographe.";
+    errorBox.classList.remove('hidden');
+    return;
+  }
+  errorBox.classList.add('hidden');
+  showDashboard(classe, student);
+}
+
+function showDashboard(classe, student){
+  document.getElementById('viewLogin').classList.add('hidden');
+  document.getElementById('viewDashboard').classList.remove('hidden');
+
+  document.getElementById('studentPromo').textContent = classe.name;
+  document.getElementById('studentGreeting').textContent = 'Bonjour ' + student.prenom + ' 👋';
+
+  const total = classe.evaluations.length;
+  const studentGrades = classe.grades[student.id] || {};
+  const done = classe.evaluations.filter((ev,i)=> studentGrades[i] !== null && studentGrades[i] !== undefined).length;
+  const pct = total ? Math.round((done/total)*100) : 0;
+
+  document.getElementById('studentProgressNum').textContent = done + ' / ' + total;
+  document.getElementById('studentProgressLabel').textContent = 'évaluations complétées — ' + pct + '%';
+  document.getElementById('progressFill').style.width = pct + '%';
+
+  const bySubject = {};
+  classe.evaluations.forEach((ev,i)=>{
+    if(!bySubject[ev.matiere]) bySubject[ev.matiere] = {desc: ev.matiereDesc || '', items: []};
+    bySubject[ev.matiere].items.push({...ev, index:i});
+  });
+
+  const container = document.getElementById('studentSubjects');
+  container.innerHTML = '';
+  const accentColors = ['#F4894A', '#E8194B', '#0D1F3C'];
+  let subjectIndex = 0;
+  Object.keys(bySubject).forEach(subject=>{
+    const group = document.createElement('div');
+    group.className = 'subject-group';
+    group.style.setProperty('--accent', accentColors[subjectIndex % accentColors.length]);
+    subjectIndex++;
+    let html = `<div class="subject-title">${subject}</div><div class="subject-desc">${bySubject[subject].desc}</div>`;
+    bySubject[subject].items.forEach(ev=>{
+      const g = studentGrades[ev.index];
+      const hasGrade = g !== null && g !== undefined;
+      if(hasGrade){
+        html += `
+          <div class="eval-card done">
+            <div class="eval-card-top">
+              <div class="name">${ev.nom}</div>
+              <span class="status-tag done">Fait — ${g}/20</span>
+            </div>
+            <div class="eval-actions">
+              <div class="action-link" onclick="alert('Ici, ça ouvrirait la correction pédagogique détaillée :)')">Voir la correction</div>
+              <div class="action-link practice" onclick="alert('Ici, ça relancerait le quiz en mode entraînement, sans impact sur la note :)')">S'entraîner à nouveau</div>
+            </div>
+          </div>`;
+      } else if(ev.active){
+        html += `
+          <div class="eval-card open" onclick="alert('Ici, ça ouvrirait le quiz réel :)')">
+            <div class="name">${ev.nom}</div>
+            <span class="status-tag open">À faire</span>
+          </div>`;
+      } else {
+        html += `
+          <div class="eval-card locked">
+            <div class="name">${ev.nom}</div>
+            <span class="status-tag locked">Verrouillé</span>
+          </div>`;
+      }
+    });
+    group.innerHTML = html;
+    container.appendChild(group);
+  });
+}
+
+function logout(){
+  document.getElementById('viewDashboard').classList.add('hidden');
+  document.getElementById('viewLogin').classList.remove('hidden');
+  document.getElementById('loginFirst').value = '';
+  document.getElementById('loginLast').value = '';
+  document.getElementById('loginCode').value = '';
+  document.getElementById('loginError').classList.add('hidden');
+}
+</script>
+</body>
+</html>
