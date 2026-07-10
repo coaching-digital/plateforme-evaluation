@@ -344,12 +344,54 @@ function renderCategories(){
           <div class="category-name">${cat.nom}</div>
           <div class="category-desc">${cat.description || '<i style="color:#c9ccd6;">Pas encore de description des compétences évaluées.</i>'}</div>
         </div>
+        <div style="display:flex;gap:8px;flex-shrink:0;">
+          <button class="btn btn-outline btn-sm" onclick="toggleCategoryEdit('${cat.id}')">Modifier</button>
+          <button class="btn btn-outline btn-sm" style="color:var(--rose-2);border-color:rgba(232,25,75,0.25);" onclick="deleteCategory('${cat.id}')">Supprimer</button>
+        </div>
+      </div>
+      <div class="inline-form hidden" id="catEditForm-${cat.id}">
+        <input type="text" id="catEditName-${cat.id}" value="${cat.nom.replace(/"/g,'&quot;')}" placeholder="Nom de la catégorie">
+        <textarea id="catEditDesc-${cat.id}" placeholder="Compétences évaluées dans ce module">${cat.description || ''}</textarea>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-primary btn-sm" onclick="saveCategoryEdit('${cat.id}')">Enregistrer</button>
+          <button class="btn btn-outline btn-sm" onclick="toggleCategoryEdit('${cat.id}')">Annuler</button>
+        </div>
       </div>
     `;
     list.appendChild(div);
   });
   const select = document.getElementById('newEvalCategory');
   select.innerHTML = c.categories.map(cat=>`<option value="${cat.id}">${cat.nom}</option>`).join('');
+}
+
+function toggleCategoryEdit(catId){
+  document.getElementById('catEditForm-' + catId).classList.toggle('hidden');
+}
+
+function saveCategoryEdit(catId){
+  const c = CLASSES.find(x=>x.id===currentClassId);
+  const cat = c.categories.find(x=>x.id===catId);
+  const newName = document.getElementById('catEditName-' + catId).value.trim();
+  const newDesc = document.getElementById('catEditDesc-' + catId).value.trim();
+  if(!newName) return;
+  cat.nom = newName;
+  cat.description = newDesc;
+  renderCategories();
+  renderEvals();
+}
+
+function deleteCategory(catId){
+  const c = CLASSES.find(x=>x.id===currentClassId);
+  const cat = c.categories.find(x=>x.id===catId);
+  const evalsInCat = c.evaluations.filter(ev=>ev.categoryId===catId);
+  const message = evalsInCat.length > 0
+    ? `Supprimer la catégorie "${cat.nom}" ? Les ${evalsInCat.length} évaluation(s) qu'elle contient seront conservées, mais passeront en "Non classées".`
+    : `Supprimer la catégorie "${cat.nom}" ?`;
+  if(!confirm(message)) return;
+  evalsInCat.forEach(ev => ev.categoryId = null);
+  c.categories = c.categories.filter(x=>x.id!==catId);
+  renderCategories();
+  renderEvals();
 }
 
 function addCategory(){
@@ -369,7 +411,9 @@ function renderEvals(){
   const c = CLASSES.find(x=>x.id===currentClassId);
   const rows = document.getElementById('evalRows');
   rows.innerHTML = '';
-  if(c.categories.length===0){
+  const unclassified = c.evaluations.filter(ev=>!ev.categoryId);
+
+  if(c.categories.length===0 && unclassified.length===0){
     rows.innerHTML = '<p style="font-size:13px;color:#8a8fa3;">Crée d\'abord une catégorie ci-dessus pour pouvoir y ranger des évaluations.</p>';
     return;
   }
@@ -402,6 +446,51 @@ function renderEvals(){
     block.innerHTML = html;
     rows.appendChild(block);
   });
+
+  if(unclassified.length > 0){
+    const block = document.createElement('div');
+    block.className = 'category-block';
+    block.style.borderStyle = 'dashed';
+    let html = `
+      <div class="category-head">
+        <div>
+          <div class="category-name">Non classées</div>
+          <div class="category-desc">Évaluations dont la catégorie a été supprimée. Choisis une nouvelle catégorie pour chacune, ou laisse-les ici pour l'instant — elles restent visibles et faisables par les apprenants.</div>
+        </div>
+      </div>
+    `;
+    unclassified.forEach(ev=>{
+      const options = c.categories.map(cat=>`<option value="${cat.id}">${cat.nom}</option>`).join('');
+      html += `
+        <div class="eval-row">
+          <div class="eval-info"><div class="nom">${ev.nom}</div></div>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+            <div class="toggle ${ev.active?'on':''}" onclick="toggleEval('${ev.id}')"><div class="knob"></div></div>
+            <div class="toggle-label">${ev.active?'Activé pour la classe':'Désactivé'}</div>
+            ${c.categories.length>0 ? `
+              <select id="reassign-${ev.id}" style="padding:6px 10px;border:1.5px solid var(--line);border-radius:8px;font-size:12.5px;font-family:'Manrope',sans-serif;background:var(--cream);">
+                <option value="">Ranger dans...</option>
+                ${options}
+              </select>
+              <button class="btn btn-outline btn-sm" onclick="reassignEval('${ev.id}')">Valider</button>
+            ` : ''}
+          </div>
+        </div>
+      `;
+    });
+    block.innerHTML = html;
+    rows.appendChild(block);
+  }
+}
+
+function reassignEval(evalId){
+  const c = CLASSES.find(x=>x.id===currentClassId);
+  const select = document.getElementById('reassign-' + evalId);
+  const newCatId = select.value;
+  if(!newCatId) return;
+  const ev = c.evaluations.find(e=>e.id===evalId);
+  ev.categoryId = newCatId;
+  renderEvals();
 }
 
 function toggleEval(evalId){
@@ -687,6 +776,28 @@ function previewStudent(studentId){
     group.innerHTML = html;
     container.appendChild(group);
   });
+
+  const unclassified = c.evaluations.filter(ev=>!ev.categoryId);
+  if(unclassified.length > 0){
+    const group = document.createElement('div');
+    group.className = 'subject-group';
+    let html = `<div class="subject-title">Autres évaluations</div><div class="subject-desc"></div>`;
+    unclassified.forEach(ev=>{
+      const g = c.grades[s.id] ? c.grades[s.id][ev.id] : null;
+      const hasGrade = g !== null && g !== undefined;
+      let statusHtml;
+      if(hasGrade) statusHtml = `<span class="status-tag done">Fait — ${g}/20</span>`;
+      else if(ev.active) statusHtml = `<span class="status-tag open">À faire</span>`;
+      else statusHtml = `<span class="status-tag locked">Verrouillé</span>`;
+      html += `
+        <div class="eval-card ${!ev.active && !hasGrade ? 'locked' : ''}">
+          <div class="name">${ev.nom}</div>
+          ${statusHtml}
+        </div>`;
+    });
+    group.innerHTML = html;
+    container.appendChild(group);
+  }
 }
 
 function goBack(){
