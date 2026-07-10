@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Plateforme d'évaluation — Formateur</title>
+<title>Plateforme d'évaluation — Maquette</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -118,6 +118,15 @@
   .clickable-student-name:hover{color:var(--rose-2);}
   .eval-detail-row{display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:var(--cream);border-radius:8px;margin-bottom:6px;font-size:13.5px;}
   .eval-detail-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:9px;flex-shrink:0;}
+  .desc-compound{display:flex;align-items:flex-start;border:1.5px solid var(--line);border-radius:10px;background:var(--cream);overflow:hidden;}
+  .desc-compound .prefix{padding:11px 4px 11px 14px;color:#9a9ea8;font-size:14px;white-space:nowrap;user-select:none;flex-shrink:0;font-family:'Manrope',sans-serif;}
+  .desc-compound textarea{flex:1;border:none;background:transparent;padding:11px 14px 11px 2px;font-family:'Manrope',sans-serif;font-size:14px;resize:vertical;min-height:60px;color:var(--ink);}
+  .desc-compound textarea:focus{outline:none;}
+  .eval-badge{display:inline-block;font-size:10.5px;font-weight:700;padding:3px 8px;border-radius:6px;background:rgba(13,31,60,0.06);color:var(--navy-2);margin-left:8px;}
+  .eval-badge.semester-s1{background:rgba(244,137,74,0.12);color:var(--orange);}
+  .eval-badge.muted{background:transparent;color:#c9ccd6;font-weight:600;}
+  .filter-pill-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
+  .coef-subrow th{font-weight:500 !important;color:#8a8fa3 !important;font-size:11px !important;border-bottom:1.5px solid var(--line);padding-top:0 !important;}
   .bulletin-header-row{display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px;}
   .bulletin-header-row .bulletin-title{margin-bottom:0;}
   @media (max-width:600px){ .highlight-row{grid-template-columns:1fr;} }
@@ -151,7 +160,7 @@
 </head>
 <body>
 
-<div class="banner">🧪 Interface formateur — <b>coaching digital</b> academy </div>
+<div class="banner">🧪 Maquette avec données fictives — <b>rien n'est encore connecté</b> à un vrai back-end</div>
 
 <div class="app">
   <div class="top">
@@ -184,7 +193,10 @@
         <div class="add-toggle-btn" onclick="toggleForm('categoryForm')">+ Nouvelle catégorie</div>
         <div class="inline-form hidden" id="categoryForm">
           <input type="text" id="newCategoryName" placeholder="Nom de la catégorie — ex : Bloc 2 - Relation client à distance">
-          <textarea id="newCategoryDesc" placeholder="Compétences évaluées dans ce module (visible par les apprenants, juste avant la liste des évaluations)"></textarea>
+          <div class="desc-compound">
+            <span class="prefix">Ce module évalue ta capacité à</span>
+            <textarea id="newCategoryDescContinuation" placeholder="…complète la phrase (ex : cartographier un parcours client...)"></textarea>
+          </div>
           <button class="btn btn-primary btn-sm" onclick="addCategory()">Créer la catégorie</button>
         </div>
       </div>
@@ -198,6 +210,10 @@
             <input type="text" id="newEvalName" placeholder="Nom de l'évaluation">
             <select id="newEvalCategory"></select>
           </div>
+          <div class="form-row">
+            <input type="number" id="newEvalCoef" placeholder="Coefficient" min="0.5" step="0.5" value="1">
+            <input type="date" id="newEvalDate">
+          </div>
           <button class="btn btn-primary btn-sm" onclick="addEvaluation()">Ajouter l'évaluation</button>
         </div>
       </div>
@@ -207,12 +223,13 @@
       <div class="section-label">Vue d'ensemble de la promo</div>
       <div class="stats-overview" id="statsOverview"></div>
       <div class="highlight-row" id="highlightRow"></div>
-      <div class="bulletin-toggle-row">
-        <button class="btn btn-outline" id="bulletinToggleBtn" onclick="toggleBulletin()">Accéder au bulletin détaillé</button>
+      <div class="highlight-row" id="bulletinOpenRow">
+        <button class="btn btn-outline" data-sem="s1" style="width:100%;padding:16px;" onclick="openBulletinSemester('s1')">Accéder au bulletin du semestre 1</button>
+        <button class="btn btn-outline" data-sem="s2" style="width:100%;padding:16px;" onclick="openBulletinSemester('s2')">Accéder au bulletin du semestre 2</button>
       </div>
       <div class="bulletin-section hidden" id="bulletinSection">
         <div class="bulletin-header-row">
-          <div class="bulletin-title">Bulletin — détail des notes par apprenant</div>
+          <div class="bulletin-title" id="bulletinTitleText">Bulletin</div>
           <button class="btn btn-outline btn-sm export-pdf-btn" onclick="exportBulletinPDF()">Exporter en PDF</button>
         </div>
         <div class="table-scroll"><table id="statsTable"></table></div>
@@ -277,9 +294,9 @@ let CLASSES = [
       {id:"s3", prenom:"Inès", nom:"Bernard", code:""},
     ],
     evaluations:[
-      {id:"e1", categoryId:"c1", nom:"QCM Customer Journey Mapping", active:true},
-      {id:"e2", categoryId:"c1", nom:"QCM Marketing Automation", active:false},
-      {id:"e3", categoryId:"c2", nom:"Étude de cas prospection B2B", active:true},
+      {id:"e1", categoryId:"c1", nom:"QCM Customer Journey Mapping", active:true, coefficient:1, date:"2025-10-15"},
+      {id:"e2", categoryId:"c1", nom:"QCM Marketing Automation", active:false, coefficient:1, date:null},
+      {id:"e3", categoryId:"c2", nom:"Étude de cas prospection B2B", active:true, coefficient:2, date:"2026-03-10"},
     ],
     grades:{
       "s1":{"e1":16.5,"e2":null,"e3":14},
@@ -299,8 +316,8 @@ let CLASSES = [
       {id:"s5", prenom:"Tom", nom:"Petit", code:"TOM-663"},
     ],
     evaluations:[
-      {id:"e4", categoryId:"c3", nom:"Cas managérial : conflit d'équipe", active:true},
-      {id:"e5", categoryId:"c3", nom:"QCM techniques de management", active:true},
+      {id:"e4", categoryId:"c3", nom:"Cas managérial : conflit d'équipe", active:true, coefficient:2, date:"2025-11-05"},
+      {id:"e5", categoryId:"c3", nom:"QCM techniques de management", active:true, coefficient:1, date:"2026-04-20"},
     ],
     grades:{
       "s4":{"e4":15,"e5":13.5},
@@ -308,6 +325,34 @@ let CLASSES = [
     }
   }
 ];
+
+const CATEGORY_DESC_PREFIX = "Ce module évalue ta capacité à ";
+let currentBulletinSemesterFilter = null;
+
+// Semestres fixés une fois pour toutes, valables chaque année scolaire, pour toutes les classes :
+// Semestre 1 : du 1er septembre au 31 janvier — Semestre 2 : du 1er février au 30 juin
+function getEvalSemester(c, ev){
+  if(!ev.date) return null;
+  const month = parseInt(ev.date.split('-')[1], 10);
+  if(month >= 9 || month === 1) return 's1'; // septembre à décembre + janvier
+  if(month >= 2 && month <= 6) return 's2'; // février à juin
+  return null; // juillet-août : hors semestre (vacances d'été)
+}
+
+function formatDateFr(dateStr){
+  if(!dateStr) return '';
+  const [y,m,d] = dateStr.split('-');
+  return `${d}/${m}/${y}`;
+}
+
+function weightedAverage(items){
+  // items: [{grade, coef}]
+  if(!items.length) return null;
+  const totalCoef = items.reduce((a,x)=>a+x.coef, 0);
+  if(totalCoef === 0) return null;
+  const totalPoints = items.reduce((a,x)=>a + x.grade*x.coef, 0);
+  return totalPoints / totalCoef;
+}
 
 let currentClassId = null;
 let navStack = ['home'];
@@ -362,7 +407,8 @@ function switchTab(tab){
   document.getElementById('tabStudents').classList.toggle('hidden', tab!=='students');
   if(tab==='stats'){
     document.getElementById('bulletinSection').classList.add('hidden');
-    document.getElementById('bulletinToggleBtn').textContent = 'Accéder au bulletin détaillé';
+    currentBulletinSemesterFilter = null;
+    updateBulletinOpenButtons();
   }
 }
 
@@ -393,7 +439,10 @@ function renderCategories(){
       </div>
       <div class="inline-form hidden" id="catEditForm-${cat.id}">
         <input type="text" id="catEditName-${cat.id}" value="${cat.nom.replace(/"/g,'&quot;')}" placeholder="Nom de la catégorie">
-        <textarea id="catEditDesc-${cat.id}" placeholder="Compétences évaluées dans ce module">${cat.description || ''}</textarea>
+        <div class="desc-compound">
+          <span class="prefix">Ce module évalue ta capacité à</span>
+          <textarea id="catEditDesc-${cat.id}" placeholder="…complète la phrase">${(cat.description || '').startsWith(CATEGORY_DESC_PREFIX) ? cat.description.slice(CATEGORY_DESC_PREFIX.length) : (cat.description || '')}</textarea>
+        </div>
         <div style="display:flex;gap:8px;">
           <button class="btn btn-primary btn-sm" onclick="saveCategoryEdit('${cat.id}')">Enregistrer</button>
           <button class="btn btn-outline btn-sm" onclick="toggleCategoryEdit('${cat.id}')">Annuler</button>
@@ -414,10 +463,10 @@ function saveCategoryEdit(catId){
   const c = CLASSES.find(x=>x.id===currentClassId);
   const cat = c.categories.find(x=>x.id===catId);
   const newName = document.getElementById('catEditName-' + catId).value.trim();
-  const newDesc = document.getElementById('catEditDesc-' + catId).value.trim();
+  const continuation = document.getElementById('catEditDesc-' + catId).value.trim();
   if(!newName) return;
   cat.nom = newName;
-  cat.description = newDesc;
+  cat.description = continuation ? (CATEGORY_DESC_PREFIX + continuation) : '';
   renderCategories();
   renderEvals();
 }
@@ -462,12 +511,13 @@ function confirmDeleteCategory(){
 
 function addCategory(){
   const name = document.getElementById('newCategoryName').value.trim();
-  const desc = document.getElementById('newCategoryDesc').value.trim();
+  const continuation = document.getElementById('newCategoryDescContinuation').value.trim();
   if(!name) return;
   const c = CLASSES.find(x=>x.id===currentClassId);
+  const desc = continuation ? (CATEGORY_DESC_PREFIX + continuation) : '';
   c.categories.push({id:'c'+Date.now(), nom:name, description:desc});
   document.getElementById('newCategoryName').value = '';
-  document.getElementById('newCategoryDesc').value = '';
+  document.getElementById('newCategoryDescContinuation').value = '';
   document.getElementById('categoryForm').classList.add('hidden');
   renderCategories();
   renderEvals();
@@ -492,17 +542,7 @@ function renderEvals(){
     if(catEvals.length===0){
       itemsHtml = '<p style="font-size:12.5px;color:#c9ccd6;">Aucune évaluation dans cette catégorie pour l\'instant.</p>';
     } else {
-      catEvals.forEach(ev=>{
-        itemsHtml += `
-          <div class="eval-row">
-            <div class="eval-info"><div class="nom">${ev.nom}</div></div>
-            <div style="display:flex;align-items:center;">
-              <div class="toggle ${ev.active?'on':''}" onclick="toggleEval('${ev.id}')"><div class="knob"></div></div>
-              <div class="toggle-label">${ev.active?'Activé pour la classe':'Désactivé'}</div>
-            </div>
-          </div>
-        `;
-      });
+      catEvals.forEach(ev=>{ itemsHtml += evalRowHtml(c, ev, false); });
     }
     block.innerHTML = `
       <div class="category-head category-head-clickable" onclick="toggleCategoryEvals('${cat.id}')">
@@ -523,31 +563,7 @@ function renderEvals(){
     block.className = 'category-block';
     block.style.borderStyle = 'dashed';
     let itemsHtml = '';
-    unclassified.forEach(ev=>{
-      const options = c.categories.map(cat=>`<option value="${cat.id}">${cat.nom}</option>`).join('');
-      itemsHtml += `
-        <div class="eval-row" style="flex-direction:column;align-items:stretch;">
-          <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;">
-            <div class="eval-info"><div class="nom">${ev.nom}</div></div>
-            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-              <div class="toggle ${ev.active?'on':''}" onclick="toggleEval('${ev.id}')"><div class="knob"></div></div>
-              <div class="toggle-label">${ev.active?'Activé pour la classe':'Désactivé'}</div>
-              <select id="reassign-${ev.id}" onchange="onReassignChange('${ev.id}')" style="padding:6px 10px;border:1.5px solid var(--line);border-radius:8px;font-size:12.5px;font-family:'Manrope',sans-serif;background:var(--cream);">
-                <option value="">Ranger dans...</option>
-                <option value="__new__">+ Nouvelle catégorie</option>
-                ${options}
-              </select>
-              <button class="btn btn-outline btn-sm" onclick="reassignEval('${ev.id}')">Valider</button>
-            </div>
-          </div>
-          <div class="inline-form hidden" id="newCatInline-${ev.id}" style="margin-top:12px;">
-            <input type="text" id="newCatInlineName-${ev.id}" placeholder="Nom de la nouvelle catégorie">
-            <textarea id="newCatInlineDesc-${ev.id}" placeholder="Compétences évaluées dans ce module (optionnel)"></textarea>
-            <button class="btn btn-primary btn-sm" onclick="createCategoryAndAssign('${ev.id}')">Créer la catégorie et l'assigner</button>
-          </div>
-        </div>
-      `;
-    });
+    unclassified.forEach(ev=>{ itemsHtml += evalRowHtml(c, ev, true); });
     block.innerHTML = `
       <div class="category-head category-head-clickable" onclick="toggleCategoryEvals('__unclassified__')">
         <div>
@@ -560,6 +576,88 @@ function renderEvals(){
     `;
     rows.appendChild(block);
   }
+}
+
+function evalBadgesHtml(c, ev){
+  const coef = ev.coefficient || 1;
+  let html = `<span class="eval-badge">Coef ${coef}</span>`;
+  if(ev.date){
+    const sem = getEvalSemester(c, ev);
+    const semLabel = sem === 's1' ? 'S1' : (sem === 's2' ? 'S2' : 'Hors semestre');
+    const semClass = sem ? 'semester-s1' : 'muted';
+    html += `<span class="eval-badge ${semClass}">${formatDateFr(ev.date)} · ${semLabel}</span>`;
+  } else {
+    html += `<span class="eval-badge muted">Date non définie</span>`;
+  }
+  return html;
+}
+
+function evalRowHtml(c, ev, includeReassign){
+  const reassignHtml = includeReassign ? `
+    <select id="reassign-${ev.id}" onchange="onReassignChange('${ev.id}')" style="padding:6px 10px;border:1.5px solid var(--line);border-radius:8px;font-size:12.5px;font-family:'Manrope',sans-serif;background:var(--cream);">
+      <option value="">Ranger dans...</option>
+      <option value="__new__">+ Nouvelle catégorie</option>
+      ${c.categories.map(cat=>`<option value="${cat.id}">${cat.nom}</option>`).join('')}
+    </select>
+    <button class="btn btn-outline btn-sm" onclick="reassignEval('${ev.id}')">Valider</button>
+  ` : '';
+  const newCatInlineHtml = includeReassign ? `
+    <div class="inline-form hidden" id="newCatInline-${ev.id}" style="margin-top:12px;">
+      <input type="text" id="newCatInlineName-${ev.id}" placeholder="Nom de la nouvelle catégorie">
+      <div class="desc-compound">
+        <span class="prefix">Ce module évalue ta capacité à</span>
+        <textarea id="newCatInlineDesc-${ev.id}" placeholder="…complète la phrase (optionnel)"></textarea>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="createCategoryAndAssign('${ev.id}')">Créer la catégorie et l'assigner</button>
+    </div>
+  ` : '';
+
+  return `
+    <div class="eval-row" style="flex-direction:column;align-items:stretch;">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;">
+        <div class="eval-info">
+          <div class="nom">${ev.nom}</div>
+          <div style="margin-top:4px;">${evalBadgesHtml(c, ev)}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+          <div class="toggle ${ev.active?'on':''}" onclick="toggleEval('${ev.id}')"><div class="knob"></div></div>
+          <div class="toggle-label">${ev.active?'Activé pour la classe':'Désactivé'}</div>
+          <button class="btn btn-outline btn-sm" onclick="toggleEvalEdit('${ev.id}')">Modifier</button>
+          ${reassignHtml}
+        </div>
+      </div>
+      <div class="inline-form hidden" id="evalEditForm-${ev.id}">
+        <input type="text" id="evalEditName-${ev.id}" value="${ev.nom.replace(/"/g,'&quot;')}" placeholder="Nom de l'évaluation">
+        <div class="form-row">
+          <input type="number" id="evalEditCoef-${ev.id}" value="${ev.coefficient||1}" min="0.5" step="0.5" placeholder="Coefficient">
+          <input type="date" id="evalEditDate-${ev.id}" value="${ev.date||''}">
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn btn-primary btn-sm" onclick="saveEvalEdit('${ev.id}')">Enregistrer</button>
+          <button class="btn btn-outline btn-sm" onclick="toggleEvalEdit('${ev.id}')">Annuler</button>
+        </div>
+      </div>
+      ${newCatInlineHtml}
+    </div>
+  `;
+}
+
+function toggleEvalEdit(evalId){
+  document.getElementById('evalEditForm-' + evalId).classList.toggle('hidden');
+}
+
+function saveEvalEdit(evalId){
+  const c = CLASSES.find(x=>x.id===currentClassId);
+  const ev = c.evaluations.find(e=>e.id===evalId);
+  const newName = document.getElementById('evalEditName-' + evalId).value.trim();
+  const newCoef = parseFloat(document.getElementById('evalEditCoef-' + evalId).value) || 1;
+  const newDate = document.getElementById('evalEditDate-' + evalId).value || null;
+  if(!newName) return;
+  ev.nom = newName;
+  ev.coefficient = newCoef;
+  ev.date = newDate;
+  renderEvals();
+  renderStats();
 }
 
 function onReassignChange(evalId){
@@ -581,8 +679,9 @@ function reassignEval(evalId){
 function createCategoryAndAssign(evalId){
   const c = CLASSES.find(x=>x.id===currentClassId);
   const name = document.getElementById('newCatInlineName-' + evalId).value.trim();
-  const desc = document.getElementById('newCatInlineDesc-' + evalId).value.trim();
+  const continuation = document.getElementById('newCatInlineDesc-' + evalId).value.trim();
   if(!name) return;
+  const desc = continuation ? (CATEGORY_DESC_PREFIX + continuation) : '';
   const newCat = {id:'c'+Date.now(), nom:name, description:desc};
   c.categories.push(newCat);
   const ev = c.evaluations.find(e=>e.id===evalId);
@@ -607,12 +706,16 @@ function toggleEval(evalId){
 function addEvaluation(){
   const name = document.getElementById('newEvalName').value.trim();
   const categoryId = document.getElementById('newEvalCategory').value;
+  const coefficient = parseFloat(document.getElementById('newEvalCoef').value) || 1;
+  const date = document.getElementById('newEvalDate').value || null;
   if(!name || !categoryId) return;
   const c = CLASSES.find(x=>x.id===currentClassId);
   const id = 'e'+Date.now();
-  c.evaluations.push({id, categoryId, nom:name, active:false});
+  c.evaluations.push({id, categoryId, nom:name, active:false, coefficient, date});
   c.students.forEach(s=>{ if(!c.grades[s.id]) c.grades[s.id]={}; c.grades[s.id][id]=null; });
   document.getElementById('newEvalName').value = '';
+  document.getElementById('newEvalCoef').value = '1';
+  document.getElementById('newEvalDate').value = '';
   document.getElementById('evalForm').classList.add('hidden');
   renderEvals();
   renderStats();
@@ -627,15 +730,21 @@ function renderStatsOverview(){
   const activeEvals = c.evaluations.filter(ev=>ev.active).length;
 
   let allGrades = [];
+  let weightedItems = [];
   let completedCount = 0;
   c.students.forEach(s=>{
     c.evaluations.forEach(ev=>{
       const g = c.grades[s.id] ? c.grades[s.id][ev.id] : null;
-      if(g!==null && g!==undefined){ allGrades.push(g); completedCount++; }
+      if(g!==null && g!==undefined){
+        allGrades.push(g);
+        weightedItems.push({grade:g, coef: ev.coefficient || 1});
+        completedCount++;
+      }
     });
   });
   const successRate = allGrades.length ? Math.round((allGrades.filter(g=>g>=10).length/allGrades.length)*100) : 0;
-  const average = allGrades.length ? (allGrades.reduce((a,b)=>a+b,0)/allGrades.length).toFixed(1) : '—';
+  const weightedAvg = weightedAverage(weightedItems);
+  const average = weightedAvg !== null ? weightedAvg.toFixed(1) : '—';
   const expectedTotal = totalStudents * totalEvals;
   const completionRate = expectedTotal ? Math.round((completedCount/expectedTotal)*100) : 0;
 
@@ -658,7 +767,7 @@ function renderStatsOverview(){
     </div>
     <div class="stat-module">
       <div class="stat-num">${average}${average!=='—'?'/20':''}</div>
-      <div class="stat-label">Moyenne générale de la promo</div>
+      <div class="stat-label">Moyenne générale de la promo (pondérée)</div>
     </div>
   `;
 }
@@ -667,13 +776,17 @@ function renderHighlights(){
   const c = CLASSES.find(x=>x.id===currentClassId);
   const row = document.getElementById('highlightRow');
 
-  // Moyenne personnelle de chaque apprenant, sur ses seules évaluations déjà faites
+  // Moyenne pondérée personnelle de chaque apprenant, sur ses seules évaluations déjà faites
   const studentAverages = c.students.map(s=>{
-    const grades = c.evaluations
-      .map(ev => c.grades[s.id] ? c.grades[s.id][ev.id] : null)
-      .filter(g => g!==null && g!==undefined);
-    const avg = grades.length ? grades.reduce((a,b)=>a+b,0)/grades.length : null;
-    return {student:s, avg, count:grades.length};
+    const items = c.evaluations
+      .map(ev => {
+        const g = c.grades[s.id] ? c.grades[s.id][ev.id] : null;
+        if(g===null || g===undefined) return null;
+        return {grade:g, coef: ev.coefficient || 1};
+      })
+      .filter(Boolean);
+    const avg = items.length ? weightedAverage(items) : null;
+    return {student:s, avg, count:items.length};
   }).filter(x => x.count > 0); // on ignore les apprenants sans aucune note pour l'instant
 
   let bestHtml, difficultyHtml;
@@ -718,10 +831,11 @@ function showStudentDifficultyDetail(studentId){
 
   const rows = c.evaluations.map(ev=>{
     const g = c.grades[s.id] ? c.grades[s.id][ev.id] : null;
-    return {name: ev.nom, grade: g};
+    return {name: ev.nom, grade: g, coef: ev.coefficient || 1};
   });
   const completed = rows.filter(r=>r.grade!==null && r.grade!==undefined);
-  const avg = completed.length ? (completed.reduce((a,b)=>a+b.grade,0)/completed.length).toFixed(1) : '—';
+  const weightedAvg = completed.length ? weightedAverage(completed.map(r=>({grade:r.grade, coef:r.coef}))) : null;
+  const avg = weightedAvg !== null ? weightedAvg.toFixed(1) : '—';
 
   const listHtml = rows.map(r=>{
     let dotColor, valueText, valueColor;
@@ -734,7 +848,7 @@ function showStudentDifficultyDetail(studentId){
     }
     return `
       <div class="eval-detail-row">
-        <span><span class="eval-detail-dot" style="background:${dotColor};"></span>${r.name}</span>
+        <span><span class="eval-detail-dot" style="background:${dotColor};"></span>${r.name} <span style="color:#c9ccd6;font-size:11.5px;">(coef ${r.coef})</span></span>
         <b style="color:${valueColor};">${valueText}</b>
       </div>
     `;
@@ -742,7 +856,7 @@ function showStudentDifficultyDetail(studentId){
 
   document.getElementById('studentDetailModalTitle').textContent = s.prenom + ' ' + s.nom;
   document.getElementById('studentDetailModalBody').innerHTML = `
-    <div class="modal-recap">Moyenne actuelle : <b>${avg}${avg!=='—' ? '/20' : ''}</b></div>
+    <div class="modal-recap">Moyenne pondérée actuelle : <b>${avg}${avg!=='—' ? '/20' : ''}</b></div>
     <div style="margin-top:12px;max-height:260px;overflow-y:auto;">${listHtml}</div>
   `;
   document.getElementById('studentDetailModalOverlay').classList.remove('hidden');
@@ -752,27 +866,96 @@ function closeStudentDetailModal(){
   document.getElementById('studentDetailModalOverlay').classList.add('hidden');
 }
 
+const SEMESTER_LABELS = {
+  s1: {name:'Semestre 1', interval:'Du 1er septembre au 31 janvier'},
+  s2: {name:'Semestre 2', interval:'Du 1er février au 30 juin'}
+};
+
+function computeStudentAveragesForEvals(c, evals){
+  return c.students.map(s=>{
+    const items = evals.map(ev=>{
+      const g = c.grades[s.id] ? c.grades[s.id][ev.id] : null;
+      if(g===null || g===undefined) return null;
+      return {grade:g, coef: ev.coefficient || 1};
+    }).filter(Boolean);
+    const avg = items.length ? weightedAverage(items) : null;
+    return {student:s, avg, count:items.length};
+  }).filter(x => x.count > 0);
+}
+
 function exportBulletinPDF(){
   const c = CLASSES.find(x=>x.id===currentClassId);
+  const sem = currentBulletinSemesterFilter;
+  if(!sem) return;
   const { jsPDF } = window.jspdf;
+
+  const evalsToShow = c.evaluations.filter(ev => getEvalSemester(c, ev) === sem);
+  if(evalsToShow.length === 0){
+    alert("Aucune évaluation datée dans ce semestre pour l'instant — impossible de générer le PDF.");
+    return;
+  }
+
+  const semInfo = SEMESTER_LABELS[sem];
+  const studentAverages = computeStudentAveragesForEvals(c, evalsToShow);
+  let bestText = "Pas encore assez de notes pour désigner un meilleur élève.";
+  let difficultyText = "Pas encore assez de notes.";
+  if(studentAverages.length > 0){
+    const maxAvg = Math.max(...studentAverages.map(x=>x.avg));
+    const bestStudents = studentAverages.filter(x=>Math.abs(x.avg - maxAvg) < 0.001);
+    bestText = bestStudents.map(x=>x.student.prenom+' '+x.student.nom).join(', ') + ' (' + maxAvg.toFixed(1) + '/20)';
+    const strugglingStudents = studentAverages.filter(x=>x.avg < 10);
+    difficultyText = strugglingStudents.length > 0
+      ? strugglingStudents.map(x=>x.student.prenom+' '+x.student.nom+' ('+x.avg.toFixed(1)+'/20)').join(', ')
+      : "Aucun apprenant en dessous de 10/20";
+  }
+
   const doc = new jsPDF({orientation: 'landscape'});
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const textWidth = pageWidth - 28;
 
   // En-tête
   doc.setFont('helvetica','bold');
   doc.setFontSize(16);
   doc.setTextColor(0,0,0);
-  doc.text(c.name, 14, 18);
+  doc.text(c.name, 14, 16);
 
   doc.setFont('helvetica','normal');
   doc.setFontSize(10);
   doc.setTextColor(100,100,100);
-  doc.text('Bulletin détaillé — généré le ' + new Date().toLocaleDateString('fr-FR'), 14, 25);
+  doc.text(semInfo.name + ' — ' + semInfo.interval + ' — généré le ' + new Date().toLocaleDateString('fr-FR'), 14, 22);
 
-  // Tableau des notes
-  const head = [['Apprenant', ...c.evaluations.map(ev=>ev.nom)]];
+  let y = 32;
+
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(11);
+  doc.setTextColor(0,0,0);
+  doc.text('Meilleur élève', 14, y);
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(10);
+  doc.setTextColor(60,60,60);
+  const bestLines = doc.splitTextToSize(bestText, textWidth);
+  doc.text(bestLines, 14, y + 6);
+  y += 6 + bestLines.length * 5 + 8;
+
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(11);
+  doc.setTextColor(0,0,0);
+  doc.text('Élève(s) en difficulté (< 10/20)', 14, y);
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(10);
+  doc.setTextColor(60,60,60);
+  const diffLines = doc.splitTextToSize(difficultyText, textWidth);
+  doc.text(diffLines, 14, y + 6);
+  y += 6 + diffLines.length * 5 + 10;
+
+  // Tableau des notes (avec ligne de coefficient)
+  const head = [
+    ['Apprenant', ...evalsToShow.map(ev=>ev.nom)],
+    ['Coefficient', ...evalsToShow.map(ev=>String(ev.coefficient || 1))]
+  ];
   const body = c.students.map(s=>{
     const row = [s.prenom + ' ' + s.nom];
-    c.evaluations.forEach(ev=>{
+    evalsToShow.forEach(ev=>{
       const g = c.grades[s.id] ? c.grades[s.id][ev.id] : null;
       row.push((g===null || g===undefined) ? '—' : g + '/20');
     });
@@ -782,36 +965,55 @@ function exportBulletinPDF(){
   doc.autoTable({
     head: head,
     body: body,
-    startY: 32,
+    startY: y,
     styles:{font:'helvetica', fontSize:10, textColor:[0,0,0], cellPadding:5, lineColor:[200,200,200], lineWidth:0.1},
     headStyles:{fillColor:[240,240,240], textColor:[0,0,0], fontStyle:'bold'},
     alternateRowStyles:{fillColor:[250,250,250]}
   });
 
   const safeClassName = c.name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
-  doc.save('bulletin-' + safeClassName + '.pdf');
+  doc.save('bulletin-' + safeClassName + '-' + sem + '.pdf');
 }
 
-function toggleBulletin(){
-  const section = document.getElementById('bulletinSection');
-  const btn = document.getElementById('bulletinToggleBtn');
-  const isHidden = section.classList.contains('hidden');
-  section.classList.toggle('hidden');
-  btn.textContent = isHidden ? 'Masquer le bulletin détaillé' : 'Accéder au bulletin détaillé';
+function openBulletinSemester(sem){
+  currentBulletinSemesterFilter = sem;
+  document.getElementById('bulletinSection').classList.remove('hidden');
+  document.getElementById('bulletinTitleText').textContent = 'Bulletin — ' + SEMESTER_LABELS[sem].name;
+  renderBulletinTable();
+  updateBulletinOpenButtons();
 }
 
-function renderStats(){
-  renderStatsOverview();
-  renderHighlights();
+function updateBulletinOpenButtons(){
+  const container = document.getElementById('bulletinOpenRow');
+  if(!container) return;
+  container.querySelectorAll('button').forEach(btn=>{
+    const isActive = btn.dataset.sem === currentBulletinSemesterFilter;
+    btn.classList.toggle('btn-primary', isActive);
+    btn.classList.toggle('btn-outline', !isActive);
+  });
+}
+
+function renderBulletinTable(){
   const c = CLASSES.find(x=>x.id===currentClassId);
   const table = document.getElementById('statsTable');
+  if(!currentBulletinSemesterFilter){ table.innerHTML = ''; return; }
+  const evalsToShow = c.evaluations.filter(ev => getEvalSemester(c, ev) === currentBulletinSemesterFilter);
+
+  if(evalsToShow.length === 0){
+    table.innerHTML = '<tbody><tr><td style="padding:16px;color:#8a8fa3;font-size:13px;">Aucune évaluation datée dans ce semestre pour l\'instant.</td></tr></tbody>';
+    return;
+  }
+
   let thead = '<thead><tr><th>Apprenant</th>';
-  c.evaluations.forEach(ev=>{ thead += `<th>${ev.nom}</th>`; });
+  evalsToShow.forEach(ev=>{ thead += `<th>${ev.nom}</th>`; });
+  thead += '</tr><tr class="coef-subrow"><th>Coefficient</th>';
+  evalsToShow.forEach(ev=>{ thead += `<th>${ev.coefficient || 1}</th>`; });
   thead += '</tr></thead>';
+
   let tbody = '<tbody>';
   c.students.forEach(s=>{
     tbody += `<tr><td class="name">${s.prenom} ${s.nom}</td>`;
-    c.evaluations.forEach(ev=>{
+    evalsToShow.forEach(ev=>{
       const g = c.grades[s.id] ? c.grades[s.id][ev.id] : null;
       if(g===null || g===undefined){
         tbody += `<td class="grade pending">—</td>`;
@@ -823,6 +1025,13 @@ function renderStats(){
   });
   tbody += '</tbody>';
   table.innerHTML = thead + tbody;
+}
+
+function renderStats(){
+  renderStatsOverview();
+  renderHighlights();
+  renderBulletinTable();
+  updateBulletinOpenButtons();
 }
 
 function renderStudents(){
