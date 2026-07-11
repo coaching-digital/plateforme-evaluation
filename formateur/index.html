@@ -310,8 +310,7 @@
     </div>
 
     <div id="tabEvals">
-      <button class="btn btn-outline eval-menu-btn" id="btn-evalsByCategorySection" onclick="toggleEvalMenuSection('evalsByCategorySection', this)">Évaluations par compétences</button>
-      <div class="card hidden" id="evalsByCategorySection">
+      <div class="card" id="evalsByCategorySection">
         <div class="section-label">Évaluations par compétence</div>
         <div id="evalRows"></div>
         <div class="add-toggle-btn" onclick="toggleForm('evalForm')">+ Ajouter une évaluation</div>
@@ -330,24 +329,6 @@
           </div>
           <button class="btn btn-primary btn-sm" onclick="addEvaluation()">Ajouter l'évaluation</button>
         </div>
-      </div>
-
-      <button class="btn btn-outline eval-menu-btn" id="btn-semesterS1Section" onclick="toggleEvalMenuSection('semesterS1Section', this)">Évaluations Semestre 1</button>
-      <div class="card hidden" id="semesterS1Section">
-        <div class="bulletin-header-row">
-          <div class="section-label" style="margin-bottom:0;">Évaluations — Semestre 1</div>
-          <button class="btn btn-outline btn-sm" onclick="exportSemesterRecapPDF('s1')">Exporter en PDF</button>
-        </div>
-        <div id="semesterS1RecapBody"></div>
-      </div>
-
-      <button class="btn btn-outline eval-menu-btn" id="btn-semesterS2Section" onclick="toggleEvalMenuSection('semesterS2Section', this)">Évaluations Semestre 2</button>
-      <div class="card hidden" id="semesterS2Section">
-        <div class="bulletin-header-row">
-          <div class="section-label" style="margin-bottom:0;">Évaluations — Semestre 2</div>
-          <button class="btn btn-outline btn-sm" onclick="exportSemesterRecapPDF('s2')">Exporter en PDF</button>
-        </div>
-        <div id="semesterS2RecapBody"></div>
       </div>
     </div>
 
@@ -394,6 +375,23 @@
             <div class="pedago-table-scroll"><table class="pedago-table" id="pedagoTable-s1"></table></div>
           </div>
         </div>
+
+        <div class="category-block">
+          <div class="category-head category-head-clickable" onclick="togglePedagoSub('s1','evaluations')">
+            <div>
+              <div class="competence-title">Évaluations du semestre 1</div>
+              <div class="pedago-mini-row" id="pedagoEvalsStats-s1"></div>
+            </div>
+            <div class="category-chevron" id="pedagoChevron-s1-evaluations">›</div>
+          </div>
+          <div class="eval-items-container hidden" id="pedagoEvalsBody-s1">
+            <div class="bulletin-header-row">
+              <div class="bulletin-title">Évaluations — Semestre 1</div>
+              <button class="btn btn-outline btn-sm export-pdf-btn" onclick="exportEvalsRecapPDF('s1')">Exporter en PDF</button>
+            </div>
+            <div class="pedago-table-scroll"><table class="pedago-table" id="pedagoEvalsTable-s1"></table></div>
+          </div>
+        </div>
       </div>
 
       <button class="btn btn-outline eval-menu-btn" id="btn-pedagoSemBlock-s2" data-sem="s2" onclick="togglePedagoSemester('s2')">Bilans semestre 2</button>
@@ -432,6 +430,23 @@
               <button class="btn btn-outline btn-sm export-pdf-btn" id="pedagoZipBtn-s2" onclick="exportAllBilansZip('s2')">Exporter tous les bilans (ZIP)</button>
             </div>
             <div class="pedago-table-scroll"><table class="pedago-table" id="pedagoTable-s2"></table></div>
+          </div>
+        </div>
+
+        <div class="category-block">
+          <div class="category-head category-head-clickable" onclick="togglePedagoSub('s2','evaluations')">
+            <div>
+              <div class="competence-title">Évaluations du semestre 2</div>
+              <div class="pedago-mini-row" id="pedagoEvalsStats-s2"></div>
+            </div>
+            <div class="category-chevron" id="pedagoChevron-s2-evaluations">›</div>
+          </div>
+          <div class="eval-items-container hidden" id="pedagoEvalsBody-s2">
+            <div class="bulletin-header-row">
+              <div class="bulletin-title">Évaluations — Semestre 2</div>
+              <button class="btn btn-outline btn-sm export-pdf-btn" onclick="exportEvalsRecapPDF('s2')">Exporter en PDF</button>
+            </div>
+            <div class="pedago-table-scroll"><table class="pedago-table" id="pedagoEvalsTable-s2"></table></div>
           </div>
         </div>
       </div>
@@ -822,11 +837,6 @@ function openClass(id){
   const c = CLASSES.find(x=>x.id===id);
   document.getElementById('classTitle').textContent = c.name;
   document.getElementById('classSub').textContent = 'Code promo : ' + c.codePromo;
-  ['evalsByCategorySection','semesterS1Section','semesterS2Section'].forEach(sectionId=>{
-    document.getElementById(sectionId).classList.add('hidden');
-    const btn = document.getElementById('btn-' + sectionId);
-    if(btn){ btn.classList.add('btn-outline'); btn.classList.remove('btn-rose-active'); }
-  });
   renderParams();
   renderEvals();
   renderStats();
@@ -865,71 +875,6 @@ function toggleEvalMenuSection(sectionId, btnEl){
     btn.classList.toggle('btn-outline', !isOpenNow);
     btn.classList.toggle('btn-rose-active', isOpenNow);
   }
-}
-
-function renderSemesterRecap(sem){
-  const c = CLASSES.find(x=>x.id===currentClassId);
-  const body = document.getElementById('semesterS' + sem.slice(1) + 'RecapBody');
-  const evalsInSem = c.evaluations.filter(ev => getEvalSemester(c, ev) === sem);
-
-  if(evalsInSem.length === 0){
-    body.innerHTML = '<p style="font-size:13px;color:#8a8fa3;">Aucune évaluation datée sur ce semestre pour l\'instant.</p>';
-    return;
-  }
-  body.innerHTML = evalsInSem.map(ev=>{
-    const comp = getCompetence(c.filiereId, ev.competenceId);
-    const compLabel = comp ? comp.nom : 'Non rattachée';
-    return `
-      <div style="padding:14px 4px;border-top:1px solid var(--line);">
-        <div style="font-weight:700;color:var(--navy);font-size:14.5px;margin-bottom:8px;">${ev.nom}</div>
-        <div>
-          <span class="eval-badge">Coef ${ev.coefficient || 1}</span>
-          <span class="eval-badge semester-s1">${formatDateFr(ev.date)} · ${sem==='s1'?'S1':'S2'}</span>
-          <span class="eval-badge tag-category">${compLabel}</span>
-        </div>
-      </div>
-    `;
-  }).join('');
-}
-
-function exportSemesterRecapPDF(sem){
-  const c = CLASSES.find(x=>x.id===currentClassId);
-  const evalsInSem = c.evaluations.filter(ev => getEvalSemester(c, ev) === sem);
-  if(evalsInSem.length === 0){
-    alert("Aucune évaluation datée sur ce semestre pour l'instant — impossible de générer le PDF.");
-    return;
-  }
-  const { jsPDF } = window.jspdf;
-  const semInfo = SEMESTER_LABELS[sem];
-  const doc = new jsPDF({orientation: 'landscape'});
-
-  doc.setFont('helvetica','bold');
-  doc.setFontSize(16);
-  doc.setTextColor(0,0,0);
-  doc.text(c.name, 14, 16);
-
-  doc.setFont('helvetica','normal');
-  doc.setFontSize(10);
-  doc.setTextColor(100,100,100);
-  doc.text('Évaluations — ' + semInfo.name + ' (' + semInfo.interval + ') — généré le ' + new Date().toLocaleDateString('fr-FR'), 14, 22);
-
-  const head = [['Évaluation', 'Compétence', 'Coefficient', 'Date']];
-  const body = evalsInSem.map(ev=>{
-    const comp = getCompetence(c.filiereId, ev.competenceId);
-    return [ev.nom, comp ? comp.nom : 'Non rattachée', String(ev.coefficient || 1), formatDateFr(ev.date)];
-  });
-
-  doc.autoTable({
-    head: head,
-    body: body,
-    startY: 30,
-    styles:{font:'helvetica', fontSize:10, textColor:[0,0,0], cellPadding:5, lineColor:[200,200,200], lineWidth:0.1},
-    headStyles:{fillColor:[240,240,240], textColor:[0,0,0], fontStyle:'bold'},
-    alternateRowStyles:{fillColor:[250,250,250]}
-  });
-
-  const safeClassName = c.name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
-  doc.save('evaluations-' + safeClassName + '-' + sem + '.pdf');
 }
 
 function renderParams(){
@@ -1007,8 +952,6 @@ function toggleCompetenceActive(competenceId){
 
 function renderEvals(){
   const c = CLASSES.find(x=>x.id===currentClassId);
-  renderSemesterRecap('s1');
-  renderSemesterRecap('s2');
   const rows = document.getElementById('evalRows');
   rows.innerHTML = '';
   const activeComps = getActiveCompetences(c);
@@ -1805,7 +1748,8 @@ function togglePedagoSemester(sem){
 }
 
 function togglePedagoSub(sem, kind){
-  const bodyId = kind === 'bulletin' ? 'pedagoBulletinBody-' + sem : 'pedagoCompBody-' + sem;
+  const bodyIds = { bulletin:'pedagoBulletinBody-'+sem, competences:'pedagoCompBody-'+sem, evaluations:'pedagoEvalsBody-'+sem };
+  const bodyId = bodyIds[kind];
   const chevron = document.getElementById('pedagoChevron-' + sem + '-' + kind);
   const body = document.getElementById(bodyId);
   const isOpenNow = body.classList.toggle('hidden') === false;
@@ -1814,7 +1758,8 @@ function togglePedagoSub(sem, kind){
   if(isOpenNow){
     expandedPedagoSub.add(key);
     if(kind === 'bulletin') renderBulletinTableInto(sem);
-    else renderPedagoTableInto(sem);
+    else if(kind === 'competences') renderPedagoTableInto(sem);
+    else renderPedagoEvalsTableInto(sem);
   } else {
     expandedPedagoSub.delete(key);
   }
@@ -1913,6 +1858,12 @@ function renderPedagoMiniStats(sem){
     zipBtn.disabled = !allDone;
     zipBtn.title = allDone ? '' : 'Disponible une fois que tous les bilans de ce semestre sont validés';
   }
+
+  const evalsInSem = c.evaluations.filter(ev => getEvalSemester(c, ev) === sem);
+  const evalsEl = document.getElementById('pedagoEvalsStats-' + sem);
+  if(evalsEl){
+    evalsEl.innerHTML = `<span class="pedago-mini-badge" style="background:rgba(13,31,60,0.06);color:var(--navy-2);">${evalsInSem.length} évaluation(s) sur ce semestre</span>`;
+  }
 }
 
 function renderPedagoTableInto(sem){
@@ -1952,12 +1903,114 @@ function renderPedagoTableInto(sem){
   table.innerHTML = head + bodyRows;
 }
 
+// ---------- Évaluations du semestre (tableau de suivi de cours, 7 colonnes) ----------
+function getEvalRecapRow(c, ev){
+  const comp = getCompetence(c.filiereId, ev.competenceId);
+  const criteriaLabels = (ev.criteriaIds || [])
+    .map(id => comp ? (comp.criteres.find(cr=>cr.id===id) || {}).label : null)
+    .filter(Boolean);
+  const stats = getEvalCompletionStats(c, ev);
+  const today = new Date();
+  const isPastDue = ev.date && new Date(ev.date) < today;
+  const lateCount = isPastDue ? stats.absentStudents.length : 0;
+  return {
+    nom: ev.nom,
+    competence: comp ? comp.nom : 'Non rattachée',
+    criteres: criteriaLabels,
+    date: ev.date,
+    doneCount: stats.doneCount,
+    total: stats.total,
+    lateCount,
+    classAvg: stats.classAvg
+  };
+}
+
+function renderPedagoEvalsTableInto(sem){
+  const c = CLASSES.find(x=>x.id===currentClassId);
+  const table = document.getElementById('pedagoEvalsTable-' + sem);
+  if(!table) return;
+  const evalsInSem = c.evaluations.filter(ev => getEvalSemester(c, ev) === sem);
+
+  if(evalsInSem.length === 0){
+    table.innerHTML = '<tbody><tr><td style="padding:16px;color:#8a8fa3;font-size:13px;">Aucune évaluation datée sur ce semestre pour l\'instant.</td></tr></tbody>';
+    return;
+  }
+
+  const rows = evalsInSem.map(ev => getEvalRecapRow(c, ev));
+
+  let head = '<thead><tr><th>Évaluation</th><th>Compétence</th><th>Critères rattachés</th><th>Date</th><th>Réalisé</th><th>Dont en retard</th><th>Moyenne classe</th></tr></thead>';
+  let body = '<tbody>';
+  rows.forEach(r=>{
+    body += `<tr>
+      <td class="name">${r.nom}</td>
+      <td>${r.competence}</td>
+      <td style="font-size:12px;color:#5c6178;">${r.criteres.length ? r.criteres.join(', ') : '—'}</td>
+      <td>${r.date ? formatDateFr(r.date) : '—'}</td>
+      <td>${r.doneCount}/${r.total}</td>
+      <td>${r.lateCount>0 ? `<span style="color:var(--rose-2);font-weight:700;">${r.lateCount}</span>` : '0'}</td>
+      <td class="grade ${r.classAvg!==null && r.classAvg>=10 ? 'good' : (r.classAvg!==null ? 'bad' : 'pending')}">${r.classAvg!==null ? r.classAvg.toFixed(1)+'/20' : '—'}</td>
+    </tr>`;
+  });
+  body += '</tbody>';
+
+  table.innerHTML = head + body;
+}
+
+function exportEvalsRecapPDF(sem){
+  const c = CLASSES.find(x=>x.id===currentClassId);
+  const evalsInSem = c.evaluations.filter(ev => getEvalSemester(c, ev) === sem);
+  if(evalsInSem.length === 0){
+    alert("Aucune évaluation datée sur ce semestre pour l'instant — impossible de générer le PDF.");
+    return;
+  }
+  const { jsPDF } = window.jspdf;
+  const semInfo = SEMESTER_LABELS[sem];
+  const doc = new jsPDF({orientation: 'landscape'});
+
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(16);
+  doc.setTextColor(0,0,0);
+  doc.text(c.name, 14, 16);
+
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(10);
+  doc.setTextColor(100,100,100);
+  doc.text('Évaluations — ' + semInfo.name + ' (' + semInfo.interval + ') — généré le ' + new Date().toLocaleDateString('fr-FR'), 14, 22);
+
+  const rows = evalsInSem.map(ev => getEvalRecapRow(c, ev));
+  const head = [['Évaluation', 'Compétence', 'Critères rattachés', 'Date', 'Réalisé', 'Dont en retard', 'Moyenne classe']];
+  const body = rows.map(r => [
+    r.nom,
+    r.competence,
+    r.criteres.length ? r.criteres.join(', ') : '—',
+    r.date ? formatDateFr(r.date) : '—',
+    r.doneCount + '/' + r.total,
+    String(r.lateCount),
+    r.classAvg!==null ? r.classAvg.toFixed(1)+'/20' : '—'
+  ]);
+
+  doc.autoTable({
+    head: head,
+    body: body,
+    startY: 30,
+    styles:{font:'helvetica', fontSize:9, textColor:[0,0,0], cellPadding:4, lineColor:[200,200,200], lineWidth:0.1},
+    headStyles:{fillColor:[240,240,240], textColor:[0,0,0], fontStyle:'bold'},
+    alternateRowStyles:{fillColor:[250,250,250]},
+    columnStyles:{2:{cellWidth:70}}
+  });
+
+  const safeClassName = c.name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+  doc.save('evaluations-' + safeClassName + '-' + sem + '.pdf');
+}
+
+
 function renderPedagoBlocks(){
   ['s1','s2'].forEach(sem=>{
     renderPedagoMiniStats(sem);
     if(expandedPedagoSemester.has(sem)) renderPedagoSemesterOverview(sem);
     if(expandedPedagoSub.has(sem + ':bulletin')) renderBulletinTableInto(sem);
     if(expandedPedagoSub.has(sem + ':competences')) renderPedagoTableInto(sem);
+    if(expandedPedagoSub.has(sem + ':evaluations')) renderPedagoEvalsTableInto(sem);
   });
 }
 
