@@ -88,6 +88,10 @@
   .grade.pending{color:#c9ccd6;}
   .table-scroll{overflow-x:auto;}
   .stats-overview{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:14px;margin-bottom:22px;}
+  .stats-overview.compact{gap:8px;margin-bottom:14px;}
+  .stats-overview.compact .stat-module{padding:12px 10px;border-radius:12px;}
+  .stats-overview.compact .stat-num{font-size:18px;}
+  .stats-overview.compact .stat-label{font-size:10px;margin-top:2px;}
   .stat-module{background:var(--cream);border:1.5px solid var(--line);border-radius:16px;padding:20px 16px;text-align:center;}
   .stat-module .stat-num{font-family:'Sora',sans-serif;font-weight:800;font-size:28px;color:var(--navy);}
   .stat-module .stat-label{font-size:12px;color:#8a8fa3;margin-top:4px;line-height:1.4;}
@@ -95,6 +99,11 @@
   .bulletin-section{margin-top:22px;padding-top:22px;border-top:1.5px dashed var(--line);}
   .bulletin-title{font-family:'Sora',sans-serif;font-weight:700;font-size:15px;color:var(--navy);margin-bottom:14px;}
   .highlight-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:22px;}
+  .highlight-row.compact{gap:8px;margin-bottom:0;}
+  .highlight-row.compact .highlight-card{padding:12px 14px;border-radius:12px;}
+  .highlight-row.compact .highlight-label{font-size:10px;margin-bottom:5px;}
+  .highlight-row.compact .highlight-names{font-size:13px;}
+  .highlight-row.compact .highlight-sub{font-size:11px;}
   .modal-overlay{position:fixed;inset:0;background:rgba(13,31,60,0.45);display:flex;align-items:center;justify-content:center;z-index:1000;padding:20px;}
   .modal-overlay.hidden{display:none !important;}
   .modal-box{background:white;border-radius:20px;padding:28px 30px;max-width:440px;width:100%;box-shadow:0 12px 40px rgba(13,31,60,0.25);max-height:88vh;overflow-y:auto;}
@@ -325,6 +334,7 @@
       <button class="btn btn-outline eval-menu-btn" id="btn-pedagoSemBlock-s1" data-sem="s1" onclick="togglePedagoSemester('s1')">Bilans semestre 1</button>
       <div class="theme-accordion hidden" id="pedagoSemBlock-s1">
         <div class="section-label" style="margin-bottom:14px;">Bilans pédagogiques et compétences du semestre 1</div>
+        <div id="pedagoSemOverview-s1" style="margin-bottom:14px;"></div>
 
         <div class="category-block">
           <div class="category-head category-head-clickable" onclick="togglePedagoSub('s1','bulletin')">
@@ -364,6 +374,7 @@
       <button class="btn btn-outline eval-menu-btn" id="btn-pedagoSemBlock-s2" data-sem="s2" onclick="togglePedagoSemester('s2')">Bilans semestre 2</button>
       <div class="theme-accordion hidden" id="pedagoSemBlock-s2">
         <div class="section-label" style="margin-bottom:14px;">Bilans pédagogiques et compétences du semestre 2</div>
+        <div id="pedagoSemOverview-s2" style="margin-bottom:14px;"></div>
 
         <div class="category-block">
           <div class="category-head category-head-clickable" onclick="togglePedagoSub('s2','bulletin')">
@@ -1272,11 +1283,119 @@ function renderHighlights(){
   `;
 }
 
-function showStudentDifficultyDetail(studentId){
+// ---------- Résumé compact (mêmes indicateurs que l'accueil), scopé à un semestre ----------
+function computeSemesterOverviewStats(c, sem){
+  const semEvals = c.evaluations.filter(ev=>getEvalSemester(c, ev)===sem);
+  const totalEvals = semEvals.length;
+  const activeEvals = semEvals.filter(ev=>ev.active).length;
+
+  let allGrades = [];
+  let weightedItems = [];
+  let completedCount = 0;
+  c.students.forEach(s=>{
+    semEvals.forEach(ev=>{
+      const g = c.grades[s.id] ? c.grades[s.id][ev.id] : null;
+      if(g!==null && g!==undefined){
+        allGrades.push(g);
+        weightedItems.push({grade:g, coef: ev.coefficient || 1});
+        completedCount++;
+      }
+    });
+  });
+  const successRate = allGrades.length ? Math.round((allGrades.filter(g=>g>=10).length/allGrades.length)*100) : 0;
+  const weightedAvg = weightedItems.length ? weightedAverage(weightedItems) : null;
+  const average = weightedAvg !== null ? weightedAvg.toFixed(1) : '—';
+  const expectedTotal = c.students.length * totalEvals;
+  const completionRate = expectedTotal ? Math.round((completedCount/expectedTotal)*100) : 0;
+
+  return { totalEvals, activeEvals, completionRate, successRate, average };
+}
+
+function computeSemesterStudentAverages(c, sem){
+  const semEvals = c.evaluations.filter(ev=>getEvalSemester(c, ev)===sem);
+  return c.students.map(s=>{
+    const items = semEvals.map(ev=>{
+      const g = c.grades[s.id] ? c.grades[s.id][ev.id] : null;
+      if(g===null || g===undefined) return null;
+      return {grade:g, coef: ev.coefficient || 1};
+    }).filter(Boolean);
+    const avg = items.length ? weightedAverage(items) : null;
+    return {student:s, avg, count:items.length};
+  }).filter(x => x.count > 0);
+}
+
+function renderPedagoSemesterOverview(sem){
+  const c = CLASSES.find(x=>x.id===currentClassId);
+  const el = document.getElementById('pedagoSemOverview-' + sem);
+  if(!el) return;
+  const stats = computeSemesterOverviewStats(c, sem);
+
+  let html = `
+    <div class="stats-overview compact">
+      <div class="stat-module">
+        <div class="stat-num">${stats.completionRate}%</div>
+        <div class="stat-label">Évaluations complétées par la promo</div>
+      </div>
+      <div class="stat-module">
+        <div class="stat-num">${stats.successRate}%</div>
+        <div class="stat-label">Taux de réussite semestre</div>
+      </div>
+      <div class="stat-module">
+        <div class="stat-num">${stats.average}${stats.average!=='—'?'/20':''}</div>
+        <div class="stat-label">Moyenne générale semestre</div>
+      </div>
+      <div class="stat-module">
+        <div class="stat-num">${stats.activeEvals}/${stats.totalEvals}</div>
+        <div class="stat-label">Évaluations activées ce semestre</div>
+      </div>
+    </div>
+  `;
+
+  const studentAverages = computeSemesterStudentAverages(c, sem);
+  let bestHtml, difficultyHtml;
+  if(studentAverages.length === 0){
+    bestHtml = `<div class="highlight-sub">Pas encore assez de notes.</div>`;
+    difficultyHtml = `<div class="highlight-sub">Pas encore assez de notes.</div>`;
+  } else {
+    const maxAvg = Math.max(...studentAverages.map(x=>x.avg));
+    const bestStudents = studentAverages.filter(x=>Math.abs(x.avg - maxAvg) < 0.001);
+    bestHtml = `
+      <div class="highlight-names">${bestStudents.map(x=>x.student.prenom+' '+x.student.nom).join(', ')}</div>
+      <div class="highlight-sub">Moyenne : ${maxAvg.toFixed(1)}/20</div>
+    `;
+    const strugglingStudents = studentAverages.filter(x=>x.avg < 10);
+    if(strugglingStudents.length === 0){
+      difficultyHtml = `<div class="highlight-sub">Aucun apprenant en dessous de 10/20 ce semestre 🎉</div>`;
+    } else {
+      difficultyHtml = `
+        <div class="highlight-names">${strugglingStudents.map(x=>`<span class="clickable-student-name" onclick="showStudentDifficultyDetail('${x.student.id}','${sem}')">${x.student.prenom} ${x.student.nom} (${x.avg.toFixed(1)}/20)</span>`).join(', ')}</div>
+        <div class="highlight-sub">${strugglingStudents.length} apprenant${strugglingStudents.length>1?'s':''} — clique sur un nom pour voir le détail</div>
+      `;
+    }
+  }
+
+  html += `
+    <div class="highlight-row compact">
+      <div class="highlight-card best">
+        <div class="highlight-label">🏆 Meilleur élève</div>
+        ${bestHtml}
+      </div>
+      <div class="highlight-card difficulty">
+        <div class="highlight-label">⚠️ Élève(s) en difficulté</div>
+        ${difficultyHtml}
+      </div>
+    </div>
+  `;
+
+  el.innerHTML = html;
+}
+
+function showStudentDifficultyDetail(studentId, sem){
   const c = CLASSES.find(x=>x.id===currentClassId);
   const s = c.students.find(x=>x.id===studentId);
+  const evalsToShow = sem ? c.evaluations.filter(ev=>getEvalSemester(c, ev)===sem) : c.evaluations;
 
-  const rows = c.evaluations.map(ev=>{
+  const rows = evalsToShow.map(ev=>{
     const g = c.grades[s.id] ? c.grades[s.id][ev.id] : null;
     return {name: ev.nom, grade: g, coef: ev.coefficient || 1};
   });
@@ -1583,6 +1702,7 @@ function togglePedagoSemester(sem){
     if(expandedPedagoSemester.has(sem)) expandedPedagoSemester.delete(sem); // safety, shouldn't happen
     expandedPedagoSemester.add(sem);
     renderPedagoMiniStats(sem);
+    renderPedagoSemesterOverview(sem);
   } else {
     expandedPedagoSemester.delete(sem);
   }
@@ -1736,6 +1856,7 @@ function renderPedagoTableInto(sem){
 function renderPedagoBlocks(){
   ['s1','s2'].forEach(sem=>{
     renderPedagoMiniStats(sem);
+    if(expandedPedagoSemester.has(sem)) renderPedagoSemesterOverview(sem);
     if(expandedPedagoSub.has(sem + ':bulletin')) renderBulletinTableInto(sem);
     if(expandedPedagoSub.has(sem + ':competences')) renderPedagoTableInto(sem);
   });
