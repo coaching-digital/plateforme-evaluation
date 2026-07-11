@@ -20,7 +20,7 @@
     --ink:#1a1a2e;
     --line: rgba(13,31,60,0.10);
     --green:#1c8a5a;
-    --gold:#B8860B;
+    --light-blue:#29A9E0;
   }
   *{box-sizing:border-box;}
   body{margin:0;background:var(--cream);color:var(--ink);font-family:'Manrope', sans-serif;min-height:100vh;}
@@ -173,7 +173,7 @@
   .mastery-badge{font-size:11px;font-weight:700;padding:4px 10px;border-radius:7px;white-space:nowrap;}
   .mastery-badge.na{background:rgba(232,25,75,0.10);color:var(--rose-2);}
   .mastery-badge.eca{background:rgba(244,137,74,0.12);color:var(--orange);}
-  .mastery-badge.partiel{background:rgba(184,134,11,0.12);color:var(--gold);}
+  .mastery-badge.partiel{background:rgba(41,169,224,0.12);color:var(--light-blue);}
   .mastery-badge.acquis{background:rgba(13,31,60,0.08);color:var(--navy-2);}
   .mastery-badge.maitrise{background:rgba(28,138,90,0.12);color:var(--green);}
   .mastery-theme-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--orange);margin:16px 0 8px;font-family:'Sora',sans-serif;}
@@ -194,6 +194,16 @@
   .pedago-table{border-collapse:collapse;font-size:12.5px;white-space:nowrap;}
   .pedago-table th, .pedago-table td{padding:9px 12px;border-bottom:1px solid var(--line);text-align:left;}
   .pedago-table th{font-family:'Sora',sans-serif;font-size:10.5px;text-transform:uppercase;letter-spacing:0.02em;color:#8a8fa3;background:var(--cream);position:sticky;top:0;}
+  .enquete-date-row{display:flex;align-items:flex-end;gap:10px;margin-bottom:18px;flex-wrap:wrap;}
+  .enquete-date-row .field{margin-bottom:0;flex:1;min-width:180px;}
+  .enquete-date-row .field label{font-size:11px;color:#8a8fa3;text-transform:uppercase;letter-spacing:0.03em;margin-bottom:5px;}
+  .enquete-date-row input[type="date"]{width:100%;padding:10px 12px;border:1.5px solid var(--line);border-radius:10px;font-family:'Manrope',sans-serif;font-size:13.5px;color:var(--ink);background:var(--cream);}
+  .enquete-date-row input[type="date"]:focus{outline:none;border-color:var(--orange);}
+  .enquete-wait-box{background:rgba(244,137,74,0.05);border:1.5px dashed rgba(244,137,74,0.3);border-radius:14px;padding:20px;text-align:center;margin-top:8px;}
+  .enquete-wait-box .n{font-family:'Sora',sans-serif;font-weight:800;font-size:24px;color:var(--orange);}
+  .enquete-wait-box p{font-size:12.5px;color:#8a8fa3;margin:8px 0 0;line-height:1.5;}
+  .enquete-crit-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:9px 12px;background:var(--cream);border-radius:8px;margin-bottom:6px;font-size:12.5px;color:var(--ink);}
+  .enquete-stars-mini{color:var(--rose-2);font-size:13px;font-weight:700;white-space:nowrap;}
   .pedago-table td.student-col, .pedago-table th.student-col{position:sticky;left:0;background:white;z-index:1;font-weight:700;color:var(--navy);}
   .pedago-table th.student-col{background:var(--cream);z-index:2;}
   .filter-pill-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
@@ -275,7 +285,22 @@
       <div class="tab active" data-tab="evals" onclick="switchTab('evals')">Évaluations</div>
       <div class="tab" data-tab="stats" onclick="switchTab('stats')">Statistiques &amp; notes</div>
       <div class="tab" data-tab="students" onclick="switchTab('students')">Apprenants</div>
+      <div class="tab" data-tab="enquete" onclick="switchTab('enquete')">Enquête</div>
       <div class="tab" data-tab="params" onclick="switchTab('params')">Paramètres</div>
+    </div>
+
+    <div id="tabEnquete" class="card hidden">
+      <div class="section-label">Enquête de satisfaction</div>
+      <p style="font-size:13px;color:#8a8fa3;margin:-6px 0 18px;line-height:1.5;">Les réponses des apprenants sont totalement anonymes — impossible de savoir ce qu'un apprenant précis a répondu. Seul le fait qu'il ait répondu ou non est suivi ici, séparément du contenu.</p>
+
+      <button class="btn btn-outline eval-menu-btn" id="btn-enqueteSemBlock-s1" data-sem="s1" onclick="toggleEnqueteSemester('s1')">Enquête semestre 1</button>
+      <div class="theme-accordion hidden" id="enqueteSemBlock-s1"></div>
+
+      <button class="btn btn-outline eval-menu-btn" id="btn-enqueteSemBlock-s2" data-sem="s2" onclick="toggleEnqueteSemester('s2')">Enquête semestre 2</button>
+      <div class="theme-accordion hidden" id="enqueteSemBlock-s2"></div>
+
+      <button class="btn btn-outline eval-menu-btn" id="btn-enqueteAnnuel" onclick="toggleEnqueteAnnuel()">Bilan annuel — vue d'ensemble</button>
+      <div class="theme-accordion hidden" id="enqueteAnnuelBlock"></div>
     </div>
 
     <div id="tabParams" class="card hidden">
@@ -502,6 +527,59 @@ let CLASSES = [
     // le backend branché. Démo : Camille a déjà signé son bilan du semestre 1.
     signatures:{
       "s1":{ s1:{ signedAt:"2026-07-11T09:42:00", dataUrl:"data:image/png;base64,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" } }
+    },
+    // Enquête de satisfaction — suivi "qui a répondu" (par nom) totalement séparé du contenu des réponses
+    // (anonyme, vit dans une Google Sheet à part). Aucun résultat n'est calculé/affiché tant que la classe
+    // entière n'a pas répondu. Démo : les deux semestres sont complets pour pouvoir démontrer le comparatif annuel.
+    enquetes:{
+      s1:{
+        plannedDate:"2026-01-15",
+        locked:true,
+        unlockedStudentIds:[],
+        respondedStudentIds:["s1","s2","s3"],
+        aggregate:{
+          commentsCount:1,
+          criteria:[
+            {section:"Pédagogie", text:"Clarté des explications et des supports de cours", avg:3.7},
+            {section:"Pédagogie", text:"Rythme du cours adapté à ta progression", avg:3.3},
+            {section:"Pédagogie", text:"Cohérence entre ce qui est enseigné et ce qui est évalué", avg:3.7},
+            {section:"Relation de confiance", text:"Tu fais confiance à l'expertise et à l'accompagnement de ta formatrice", avg:4.0},
+            {section:"Relation de confiance", text:"Disponibilité de la formatrice quand tu as besoin d'elle", avg:3.7},
+            {section:"Relation de confiance", text:"Tu te sens libre de poser une question ou d'exprimer un désaccord sans crainte", avg:2.7},
+            {section:"Relation de confiance", text:"Ta formatrice te motive à progresser", avg:4.0},
+            {section:"Organisation", text:"Clarté des consignes et des attendus pour chaque évaluation", avg:3.3},
+            {section:"Organisation", text:"Respect du planning annoncé (cours, évaluations, rendus)", avg:2.7},
+            {section:"Plateforme d'évaluation", text:"Facilité d'utilisation de la plateforme (notes, quiz, bilans)", avg:3.7},
+            {section:"Plateforme d'évaluation", text:"Clarté du bilan de compétences reçu en fin de semestre", avg:4.0},
+            {section:"Ressenti global", text:"Satisfaction générale pour ce semestre", avg:3.7},
+            {section:"Ressenti global", text:"Recommanderais-tu cette formation à un·e futur·e apprenti·e ?", avg:4.0}
+          ]
+        }
+      },
+      s2:{
+        plannedDate:"2026-06-10",
+        locked:true,
+        unlockedStudentIds:[],
+        respondedStudentIds:["s1","s2","s3"],
+        aggregate:{
+          commentsCount:2,
+          criteria:[
+            {section:"Pédagogie", text:"Clarté des explications et des supports de cours", avg:4.3},
+            {section:"Pédagogie", text:"Rythme du cours adapté à ta progression", avg:3.7},
+            {section:"Pédagogie", text:"Cohérence entre ce qui est enseigné et ce qui est évalué", avg:4.0},
+            {section:"Relation de confiance", text:"Tu fais confiance à l'expertise et à l'accompagnement de ta formatrice", avg:4.7},
+            {section:"Relation de confiance", text:"Disponibilité de la formatrice quand tu as besoin d'elle", avg:4.3},
+            {section:"Relation de confiance", text:"Tu te sens libre de poser une question ou d'exprimer un désaccord sans crainte", avg:3.3},
+            {section:"Relation de confiance", text:"Ta formatrice te motive à progresser", avg:4.7},
+            {section:"Organisation", text:"Clarté des consignes et des attendus pour chaque évaluation", avg:3.7},
+            {section:"Organisation", text:"Respect du planning annoncé (cours, évaluations, rendus)", avg:3.0},
+            {section:"Plateforme d'évaluation", text:"Facilité d'utilisation de la plateforme (notes, quiz, bilans)", avg:4.3},
+            {section:"Plateforme d'évaluation", text:"Clarté du bilan de compétences reçu en fin de semestre", avg:4.7},
+            {section:"Ressenti global", text:"Satisfaction générale pour ce semestre", avg:4.3},
+            {section:"Ressenti global", text:"Recommanderais-tu cette formation à un·e futur·e apprenti·e ?", avg:4.7}
+          ]
+        }
+      }
     }
   },
   {
@@ -676,6 +754,7 @@ function getActiveCompetences(c){
 
 let expandedPedagoSemester = new Set();
 let expandedPedagoSub = new Set();
+let expandedEnqueteSemester = new Set();
 
 // Semestres fixés une fois pour toutes, valables chaque année scolaire, pour toutes les classes :
 // Semestre 1 : du 1er septembre au 31 janvier — Semestre 2 : du 1er février au 30 juin
@@ -760,11 +839,16 @@ function switchTab(tab){
   document.getElementById('tabEvals').classList.toggle('hidden', tab!=='evals');
   document.getElementById('tabStats').classList.toggle('hidden', tab!=='stats');
   document.getElementById('tabStudents').classList.toggle('hidden', tab!=='students');
+  document.getElementById('tabEnquete').classList.toggle('hidden', tab!=='enquete');
   document.getElementById('tabParams').classList.toggle('hidden', tab!=='params');
   if(tab==='stats'){
     expandedPedagoSemester.clear();
     expandedPedagoSub.clear();
     renderPedagoBlocks();
+  }
+  if(tab==='enquete'){
+    expandedEnqueteSemester.clear();
+    renderEnqueteBlocks();
   }
 }
 
@@ -1474,7 +1558,7 @@ const POSTURE_TO_MASTERY_STYLE = { TI:'na', I:'eca', S:'acquis', TS:'maitrise' }
 const MASTERY_LEVELS = [
   {id:'na', label:'Non acquis', min:0, max:6, color:'var(--rose-2)'},
   {id:'eca', label:"En cours d'acquisition", min:6, max:10, color:'var(--orange)'},
-  {id:'partiel', label:'Partiellement acquis', min:10, max:14, color:'var(--gold)'},
+  {id:'partiel', label:'Partiellement acquis', min:10, max:14, color:'var(--light-blue)'},
   {id:'acquis', label:'Acquis', min:14, max:18, color:'var(--navy-2)'},
   {id:'maitrise', label:'Maîtrisé', min:18, max:20.01, color:'var(--green)'}
 ];
@@ -1489,7 +1573,7 @@ function getMasteryLevel(avg){
 const MASTERY_LEVELS_PERCENT = [
   {id:'na', label:'Non acquis', min:0, max:30, color:'var(--rose-2)'},
   {id:'eca', label:"En cours d'acquisition", min:30, max:50, color:'var(--orange)'},
-  {id:'partiel', label:'Partiellement acquis', min:50, max:70, color:'var(--gold)'},
+  {id:'partiel', label:'Partiellement acquis', min:50, max:70, color:'var(--light-blue)'},
   {id:'acquis', label:'Acquis', min:70, max:80, color:'var(--navy-2)'},
   {id:'maitrise', label:'Maîtrisé', min:80, max:100.01, color:'var(--green)'}
 ];
@@ -1875,6 +1959,527 @@ function renderPedagoBlocks(){
     if(expandedPedagoSub.has(sem + ':bulletin')) renderBulletinTableInto(sem);
     if(expandedPedagoSub.has(sem + ':competences')) renderPedagoTableInto(sem);
   });
+}
+
+// ---------- Enquête de satisfaction ----------
+function getEnqueteRecord(c, sem){
+  if(!c.enquetes) c.enquetes = {};
+  if(!c.enquetes[sem]) c.enquetes[sem] = { plannedDate:null, locked:false, unlockedStudentIds:[], respondedStudentIds:[], aggregate:null };
+  return c.enquetes[sem];
+}
+
+function toggleEnqueteSemester(sem){
+  const block = document.getElementById('enqueteSemBlock-' + sem);
+  const btn = document.getElementById('btn-enqueteSemBlock-' + sem);
+  const isOpenNow = block.classList.toggle('hidden') === false;
+  if(btn){
+    btn.classList.toggle('btn-outline', !isOpenNow);
+    btn.classList.toggle('btn-rose-active', isOpenNow);
+  }
+  if(isOpenNow){
+    expandedEnqueteSemester.add(sem);
+    renderEnqueteSemesterBlock(sem);
+  } else {
+    expandedEnqueteSemester.delete(sem);
+  }
+}
+
+function renderEnqueteBlocks(){
+  expandedEnqueteSemester.forEach(sem => renderEnqueteSemesterBlock(sem));
+}
+
+function saveEnquetePlannedDate(sem){
+  const c = CLASSES.find(x=>x.id===currentClassId);
+  const rec = getEnqueteRecord(c, sem);
+  rec.plannedDate = document.getElementById('enqueteDate-' + sem).value || null;
+}
+
+function toggleEnqueteLocked(sem){
+  const c = CLASSES.find(x=>x.id===currentClassId);
+  const rec = getEnqueteRecord(c, sem);
+  rec.locked = !rec.locked;
+  renderEnqueteSemesterBlock(sem);
+}
+
+function toggleEnqueteStudentUnlock(sem, studentId){
+  const c = CLASSES.find(x=>x.id===currentClassId);
+  const rec = getEnqueteRecord(c, sem);
+  const idx = rec.unlockedStudentIds.indexOf(studentId);
+  if(idx === -1) rec.unlockedStudentIds.push(studentId);
+  else rec.unlockedStudentIds.splice(idx, 1);
+  renderEnqueteSemesterBlock(sem);
+}
+
+const ENQUETE_SHORT_LABELS = {
+  "Clarté des explications et des supports de cours": "Clarté explications",
+  "Rythme du cours adapté à ta progression": "Rythme",
+  "Cohérence entre ce qui est enseigné et ce qui est évalué": "Cohérence",
+  "Tu fais confiance à l'expertise et à l'accompagnement de ta formatrice": "Confiance / expertise",
+  "Disponibilité de la formatrice quand tu as besoin d'elle": "Disponibilité",
+  "Tu te sens libre de poser une question ou d'exprimer un désaccord sans crainte": "Liberté d'expression",
+  "Ta formatrice te motive à progresser": "Motivation",
+  "Clarté des consignes et des attendus pour chaque évaluation": "Clarté consignes",
+  "Respect du planning annoncé (cours, évaluations, rendus)": "Respect planning",
+  "Facilité d'utilisation de la plateforme (notes, quiz, bilans)": "Facilité plateforme",
+  "Clarté du bilan de compétences reçu en fin de semestre": "Clarté bilan",
+  "Satisfaction générale pour ce semestre": "Satisfaction",
+  "Recommanderais-tu cette formation à un·e futur·e apprenti·e ?": "Recommandation"
+};
+
+const ENQUETE_CATEGORY_SLUGS = {
+  "Pédagogie": "pedagogie",
+  "Relation de confiance": "confiance",
+  "Organisation": "organisation",
+  "Plateforme d'évaluation": "plateforme",
+  "Ressenti global": "ressenti"
+};
+
+const ENQUETE_S1_COLOR = [255,0,110];   // --rose-2
+const ENQUETE_S2_COLOR = [13,31,60];    // --navy
+
+function getCategoryAverages(criteria){
+  const byCat = {};
+  criteria.forEach(cr=>{
+    if(!byCat[cr.section]) byCat[cr.section] = [];
+    byCat[cr.section].push(cr.avg);
+  });
+  const result = {};
+  Object.keys(byCat).forEach(cat=>{
+    result[cat] = byCat[cat].reduce((a,b)=>a+b,0) / byCat[cat].length;
+  });
+  return result;
+}
+
+function wrapCanvasLabel(ctx, text, maxWidth){
+  const words = text.split(' ');
+  const lines = [];
+  let cur = '';
+  words.forEach(w=>{
+    const test = (cur + ' ' + w).trim();
+    if(ctx.measureText(test).width > maxWidth && cur){
+      lines.push(cur);
+      cur = w;
+    } else {
+      cur = test;
+    }
+  });
+  if(cur) lines.push(cur);
+  return lines.slice(0, 2);
+}
+
+// Dessine un mini-graphique en barres groupées pour UNE catégorie : un groupe de 2 barres (S1 / S2)
+// par critère de la catégorie. Réutilisé à l'écran et pour l'export PDF (via canvas.toDataURL()).
+function drawCategoryBarChart(canvas, criteria, valuesS1, valuesS2){
+  const ctx = canvas.getContext('2d');
+  const ratio = window.devicePixelRatio || 1;
+  const cssW = canvas.clientWidth || 600;
+  const cssH = 150;
+  canvas.width = cssW * ratio;
+  canvas.height = cssH * ratio;
+  canvas.style.height = cssH + 'px';
+  ctx.scale(ratio, ratio);
+  ctx.clearRect(0,0,cssW,cssH);
+
+  const padL = 26, padR = 10, padT = 10, padB = 34;
+  const plotW = cssW - padL - padR;
+  const plotH = cssH - padT - padB;
+  const yMin = 1, yMax = 5;
+
+  ctx.strokeStyle = '#e5e5ea';
+  ctx.fillStyle = '#8a8fa3';
+  ctx.font = '9px Manrope, sans-serif';
+  ctx.textAlign = 'right';
+  for(let v=1; v<=5; v++){
+    const y = padT + plotH - ((v - yMin)/(yMax - yMin)) * plotH;
+    ctx.beginPath();
+    ctx.moveTo(padL, y);
+    ctx.lineTo(padL + plotW, y);
+    ctx.stroke();
+    ctx.fillText(String(v), padL - 5, y + 3);
+  }
+
+  const n = criteria.length;
+  const groupW = plotW / n;
+  const barW = Math.min(20, groupW * 0.26);
+  const gap = 5;
+
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#1a1a2e';
+  for(let i=0; i<n; i++){
+    const cx = padL + groupW * (i + 0.5);
+    const x1 = cx - gap/2 - barW;
+    const x2 = cx + gap/2;
+    const v1 = valuesS1[i], v2 = valuesS2[i];
+    const h1 = ((v1 - yMin)/(yMax - yMin)) * plotH;
+    const h2 = ((v2 - yMin)/(yMax - yMin)) * plotH;
+
+    ctx.fillStyle = `rgb(${ENQUETE_S1_COLOR[0]},${ENQUETE_S1_COLOR[1]},${ENQUETE_S1_COLOR[2]})`;
+    ctx.fillRect(x1, padT + plotH - h1, barW, h1);
+    ctx.fillStyle = `rgb(${ENQUETE_S2_COLOR[0]},${ENQUETE_S2_COLOR[1]},${ENQUETE_S2_COLOR[2]})`;
+    ctx.fillRect(x2, padT + plotH - h2, barW, h2);
+
+    ctx.fillStyle = '#1a1a2e';
+    ctx.font = '9px Manrope, sans-serif';
+    const label = ENQUETE_SHORT_LABELS[criteria[i]] || criteria[i];
+    const lines = wrapCanvasLabel(ctx, label, groupW + 8);
+    lines.forEach((ln, li)=>{
+      ctx.fillText(ln, cx, cssH - 22 + li*10);
+    });
+  }
+}
+
+function renderEnqueteChartLegend(){
+  return `
+    <div style="display:flex;gap:16px;justify-content:center;margin-top:6px;">
+      <div style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--navy-2);">
+        <span style="width:10px;height:10px;border-radius:50%;background:var(--rose-2);display:inline-block;"></span>Semestre 1
+      </div>
+      <div style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--navy-2);">
+        <span style="width:10px;height:10px;border-radius:50%;background:var(--navy);display:inline-block;"></span>Semestre 2
+      </div>
+    </div>
+  `;
+}
+
+function renderEnqueteSemesterBlock(sem){
+  const c = CLASSES.find(x=>x.id===currentClassId);
+  const container = document.getElementById('enqueteSemBlock-' + sem);
+  if(!container) return;
+  const rec = getEnqueteRecord(c, sem);
+
+  const total = c.students.length;
+  const respondedCount = rec.respondedStudentIds.length;
+  const allResponded = total > 0 && respondedCount === total;
+  const nonRespondants = c.students.filter(s => !rec.respondedStudentIds.includes(s.id));
+
+  const dateRowHtml = `
+    <div class="enquete-date-row">
+      <div class="field">
+        <label>Date prévue de l'enquête</label>
+        <input type="date" id="enqueteDate-${sem}" value="${rec.plannedDate || ''}" onchange="saveEnquetePlannedDate('${sem}')">
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;padding-bottom:2px;">
+        <div class="toggle toggle-lock ${rec.locked?'on':''}" onclick="toggleEnqueteLocked('${sem}')"><div class="knob"></div></div>
+        <div class="toggle-label">${rec.locked?'Verrouillée':'Ouverte'}</div>
+      </div>
+    </div>
+  `;
+
+  const progressPillsHtml = `
+    <div class="pedago-mini-row" style="margin:0 0 14px;">
+      <span class="pedago-mini-badge done">${respondedCount}/${total} ont répondu</span>
+      ${nonRespondants.length ? `<span class="pedago-mini-badge todo">${nonRespondants.length} en attente</span>` : ''}
+    </div>
+  `;
+
+  let nonRespondantsHtml = '';
+  if(nonRespondants.length > 0){
+    nonRespondantsHtml = `
+      <div class="absents-panel" style="margin-top:0;padding-top:0;border-top:none;">
+        ${nonRespondants.map(s=>{
+          const isUnlocked = rec.unlockedStudentIds.includes(s.id);
+          return `
+            <div class="absent-row">
+              <span>${s.prenom} ${s.nom}${isUnlocked ? ' <b style="color:var(--green);">— débloqué(e)</b>' : ''}</span>
+              <button class="btn btn-outline btn-sm" onclick="toggleEnqueteStudentUnlock('${sem}','${s.id}')">${isUnlocked ? 'Reverrouiller' : 'Débloquer pour répondre'}</button>
+            </div>
+          `;
+        }).join('')}
+      </div>
+    `;
+  }
+
+  let resultsHtml = '';
+  if(allResponded && rec.aggregate){
+    const criteria = rec.aggregate.criteria;
+    const globalAvg = criteria.reduce((sum,c)=>sum+c.avg,0) / criteria.length;
+    const best = criteria.reduce((a,b)=> b.avg > a.avg ? b : a, criteria[0]);
+    const worst = criteria.reduce((a,b)=> b.avg < a.avg ? b : a, criteria[0]);
+
+    const byCategory = {};
+    criteria.forEach(cr=>{
+      if(!byCategory[cr.section]) byCategory[cr.section] = [];
+      byCategory[cr.section].push(cr);
+    });
+
+    resultsHtml = `
+      <div class="stats-overview compact" style="margin-top:18px;">
+        <div class="stat-module">
+          <div class="stat-num">${globalAvg.toFixed(1)}/5</div>
+          <div class="stat-label">Note globale moyenne</div>
+        </div>
+        <div class="stat-module">
+          <div class="stat-num">100%</div>
+          <div class="stat-label">Taux de réponse</div>
+        </div>
+        <div class="stat-module">
+          <div class="stat-num">${rec.aggregate.commentsCount}</div>
+          <div class="stat-label">Commentaire(s) libre(s) reçu(s)</div>
+        </div>
+      </div>
+
+      <div class="highlight-row compact" style="margin-top:10px;">
+        <div class="highlight-card best">
+          <div class="highlight-label">🏆 Critère le mieux noté</div>
+          <div class="highlight-names">${best.text}</div>
+          <div class="highlight-sub">${best.avg.toFixed(1)}/5</div>
+        </div>
+        <div class="highlight-card difficulty">
+          <div class="highlight-label">⚠️ Critère à travailler</div>
+          <div class="highlight-names">${worst.text}</div>
+          <div class="highlight-sub">${worst.avg.toFixed(1)}/5</div>
+        </div>
+      </div>
+
+      <div class="bulletin-title" style="margin-top:18px;">Détail par critère</div>
+      <div style="max-height:280px;overflow-y:auto;margin-top:10px;">
+        ${Object.keys(byCategory).map(cat=>`
+          <div class="mastery-theme-title">${cat}</div>
+          ${byCategory[cat].map(cr=>`
+            <div class="enquete-crit-row">
+              <span>${cr.text}</span>
+              <span class="enquete-stars-mini">${'★'.repeat(Math.round(cr.avg))}${'☆'.repeat(5-Math.round(cr.avg))} ${cr.avg.toFixed(1)}</span>
+            </div>
+          `).join('')}
+        `).join('')}
+      </div>
+
+      <div style="margin-top:16px;">
+        <button class="btn btn-outline btn-sm" onclick="exportEnqueteSemestrePDF('${sem}')">Exporter en PDF</button>
+      </div>
+    `;
+  } else {
+    resultsHtml = `
+      <div class="enquete-wait-box">
+        <div class="n">${respondedCount}/${total}</div>
+        <p>Les résultats agrégés (moyennes, détail par critère) s'affichent automatiquement une fois que <b>100% de la classe</b> a répondu — pour préserver l'anonymat, aucun résultat partiel n'est montré.</p>
+      </div>
+    `;
+  }
+
+  container.innerHTML = `${dateRowHtml}${progressPillsHtml}${nonRespondantsHtml}${resultsHtml}`;
+}
+
+// ---------- Bilan annuel (comparatif S1 -> S2) ----------
+function toggleEnqueteAnnuel(){
+  const block = document.getElementById('enqueteAnnuelBlock');
+  const btn = document.getElementById('btn-enqueteAnnuel');
+  const isOpenNow = block.classList.toggle('hidden') === false;
+  if(btn){
+    btn.classList.toggle('btn-outline', !isOpenNow);
+    btn.classList.toggle('btn-rose-active', isOpenNow);
+  }
+  if(isOpenNow) renderEnqueteAnnuelBlock();
+}
+
+function renderEnqueteAnnuelBlock(){
+  const c = CLASSES.find(x=>x.id===currentClassId);
+  const container = document.getElementById('enqueteAnnuelBlock');
+  if(!container) return;
+  const recS1 = getEnqueteRecord(c, 's1');
+  const recS2 = getEnqueteRecord(c, 's2');
+  const total = c.students.length;
+  const s1Ready = total > 0 && recS1.respondedStudentIds.length === total && recS1.aggregate;
+  const s2Ready = total > 0 && recS2.respondedStudentIds.length === total && recS2.aggregate;
+
+  if(!s1Ready || !s2Ready){
+    const missing = [];
+    if(!s1Ready) missing.push('le semestre 1');
+    if(!s2Ready) missing.push('le semestre 2');
+    container.innerHTML = `
+      <div class="section-label" style="margin-bottom:14px;">Bilan annuel — vue d'ensemble</div>
+      <div class="enquete-wait-box">
+        <p>Le bilan annuel a besoin des résultats complets des deux semestres. Il manque encore ${missing.join(' et ')} (100% de réponses requis sur chacun).</p>
+      </div>
+    `;
+    return;
+  }
+
+  const catAvgS1 = getCategoryAverages(recS1.aggregate.criteria);
+  const catAvgS2 = getCategoryAverages(recS2.aggregate.criteria);
+  const categories = Object.keys(catAvgS1);
+
+  const yearGlobalS1 = recS1.aggregate.criteria.reduce((s,c)=>s+c.avg,0) / recS1.aggregate.criteria.length;
+  const yearGlobalS2 = recS2.aggregate.criteria.reduce((s,c)=>s+c.avg,0) / recS2.aggregate.criteria.length;
+  const yearAvg = (yearGlobalS1 + yearGlobalS2) / 2;
+  const trend = yearGlobalS2 - yearGlobalS1;
+
+  container.innerHTML = `
+    <div class="section-label" style="margin-bottom:14px;">Bilan annuel — vue d'ensemble</div>
+
+    <div class="stats-overview compact">
+      <div class="stat-module">
+        <div class="stat-num">${yearAvg.toFixed(1)}/5</div>
+        <div class="stat-label">Moyenne sur l'année</div>
+      </div>
+      <div class="stat-module">
+        <div class="stat-num" style="color:${trend>=0?'#1c8a5a':'#E8194B'};">${trend>=0?'+':''}${trend.toFixed(1)}</div>
+        <div class="stat-label">Évolution S1 → S2</div>
+      </div>
+      <div class="stat-module">
+        <div class="stat-num">${recS1.aggregate.commentsCount + recS2.aggregate.commentsCount}</div>
+        <div class="stat-label">Commentaires libres sur l'année</div>
+      </div>
+    </div>
+
+    <div class="bulletin-title" style="margin-top:18px;">Évolution par critère entre les deux semestres</div>
+    ${categories.map(cat=>`
+      <div style="background:white;border:1.5px solid var(--line);border-radius:14px;padding:14px 16px;margin-top:10px;">
+        <div class="mastery-theme-title" style="margin-top:0;">${cat}</div>
+        <canvas id="enqueteChart-${ENQUETE_CATEGORY_SLUGS[cat] || cat}" style="width:100%;"></canvas>
+      </div>
+    `).join('')}
+    ${renderEnqueteChartLegend()}
+
+    <button class="btn btn-outline btn-sm" style="margin-top:16px;" onclick="exportEnqueteAnnuelPDF()">Exporter le bilan annuel en PDF</button>
+  `;
+
+  categories.forEach(cat=>{
+    const canvas = document.getElementById('enqueteChart-' + (ENQUETE_CATEGORY_SLUGS[cat] || cat));
+    if(!canvas) return;
+    const criteriaOfCat = recS1.aggregate.criteria.filter(cr=>cr.section===cat).map(cr=>cr.text);
+    const valuesS1 = criteriaOfCat.map(text => recS1.aggregate.criteria.find(cr=>cr.text===text).avg);
+    const valuesS2 = criteriaOfCat.map(text => recS2.aggregate.criteria.find(cr=>cr.text===text).avg);
+    drawCategoryBarChart(canvas, criteriaOfCat, valuesS1, valuesS2);
+  });
+}
+
+// ---------- Export PDF : résultats d'un semestre ----------
+function exportEnqueteSemestrePDF(sem){
+  const c = CLASSES.find(x=>x.id===currentClassId);
+  const rec = getEnqueteRecord(c, sem);
+  if(!rec.aggregate) return;
+  const { jsPDF } = window.jspdf;
+  const NAVY = [13,31,60], ROSE = [232,25,75], ORANGE = [244,137,74];
+
+  const doc = new jsPDF({orientation:'portrait'});
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const marginX = 16;
+  const contentWidth = pageWidth - marginX*2;
+  let y = 0;
+
+  doc.setFillColor(ROSE[0],ROSE[1],ROSE[2]);
+  doc.rect(marginX, 9, 1.8, 22, 'F');
+  const textX = marginX + 7;
+  doc.setFont('helvetica','bold'); doc.setFontSize(18); doc.setTextColor(NAVY[0],NAVY[1],NAVY[2]);
+  doc.text('Enquête de satisfaction', textX, 17);
+  doc.setFontSize(13); doc.setTextColor(ROSE[0],ROSE[1],ROSE[2]);
+  doc.text(c.name + ' — ' + SEMESTER_LABELS[sem].name, textX, 25);
+  doc.setDrawColor(ROSE[0],ROSE[1],ROSE[2]); doc.line(textX, 28.5, pageWidth-marginX, 28.5);
+  y = 40;
+
+  const criteria = rec.aggregate.criteria;
+  const globalAvg = criteria.reduce((s,c)=>s+c.avg,0) / criteria.length;
+  doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(120,120,120);
+  doc.text('NOTE GLOBALE MOYENNE — ' + rec.respondedStudentIds.length + '/' + c.students.length + ' réponses (100%)', marginX, y);
+  doc.setFont('helvetica','bold'); doc.setFontSize(20); doc.setTextColor(globalAvg>=4?28:ROSE[0], globalAvg>=4?138:ROSE[1], globalAvg>=4?90:ROSE[2]);
+  doc.text(globalAvg.toFixed(1)+'/5', marginX, y+10);
+  y += 22;
+
+  const rows = criteria.map(cr=>[cr.section, cr.text, cr.avg.toFixed(1)+'/5']);
+  doc.autoTable({
+    head: [['Catégorie','Critère','Note moyenne']],
+    body: rows,
+    startY: y,
+    theme:'grid',
+    margin:{left:marginX, right:marginX},
+    styles:{font:'helvetica', fontSize:8.5, textColor:[26,26,46], cellPadding:3.5, lineColor:[224,224,224], lineWidth:0.15},
+    headStyles:{fillColor:[247,247,247], textColor:NAVY, fontStyle:'bold', fontSize:8.5},
+    columnStyles:{2:{cellWidth:26, halign:'center'}}
+  });
+
+  doc.save('enquete-' + sem + '-' + c.id + '.pdf');
+}
+
+// ---------- Export PDF : bilan annuel (avec le graphique d'évolution) ----------
+function exportEnqueteAnnuelPDF(){
+  const c = CLASSES.find(x=>x.id===currentClassId);
+  const recS1 = getEnqueteRecord(c, 's1');
+  const recS2 = getEnqueteRecord(c, 's2');
+  if(!recS1.aggregate || !recS2.aggregate) return;
+  const { jsPDF } = window.jspdf;
+  const NAVY = [13,31,60], ROSE = [232,25,75];
+
+  const catAvgS1 = getCategoryAverages(recS1.aggregate.criteria);
+  const catAvgS2 = getCategoryAverages(recS2.aggregate.criteria);
+  const categories = Object.keys(catAvgS1);
+  const yearGlobalS1 = recS1.aggregate.criteria.reduce((s,c)=>s+c.avg,0) / recS1.aggregate.criteria.length;
+  const yearGlobalS2 = recS2.aggregate.criteria.reduce((s,c)=>s+c.avg,0) / recS2.aggregate.criteria.length;
+  const yearAvg = (yearGlobalS1 + yearGlobalS2) / 2;
+
+  const doc = new jsPDF({orientation:'portrait'});
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const marginX = 16;
+  const contentWidth = pageWidth - marginX*2;
+  let y = 0;
+  function ensureSpace(needed){ if(y+needed > pageHeight-24){ doc.addPage(); y = 20; } }
+
+  doc.setFillColor(ROSE[0],ROSE[1],ROSE[2]);
+  doc.rect(marginX, 9, 1.8, 22, 'F');
+  const textX = marginX + 7;
+  doc.setFont('helvetica','bold'); doc.setFontSize(18); doc.setTextColor(NAVY[0],NAVY[1],NAVY[2]);
+  doc.text('Bilan annuel — Enquête de satisfaction', textX, 17);
+  doc.setFontSize(13); doc.setTextColor(ROSE[0],ROSE[1],ROSE[2]);
+  doc.text(c.name, textX, 25);
+  doc.setDrawColor(ROSE[0],ROSE[1],ROSE[2]); doc.line(textX, 28.5, pageWidth-marginX, 28.5);
+  y = 40;
+
+  doc.setFont('helvetica','normal'); doc.setFontSize(9); doc.setTextColor(120,120,120);
+  doc.text('MOYENNE SUR L\'ANNÉE', marginX, y);
+  doc.setFont('helvetica','bold'); doc.setFontSize(20); doc.setTextColor(NAVY[0],NAVY[1],NAVY[2]);
+  doc.text(yearAvg.toFixed(1)+'/5', marginX, y+10);
+  y += 24;
+
+  // Graphiques (un par catégorie, toujours dessinés hors-écran pour l'export car un canvas déjà
+  // affiché à l'écran a une taille CSS liée à sa colonne, pas forcément idéale pour le PDF)
+  doc.setFont('helvetica','bold'); doc.setFontSize(11); doc.setTextColor(NAVY[0],NAVY[1],NAVY[2]);
+  ensureSpace(10);
+  doc.text('Évolution par critère entre les deux semestres', marginX, y);
+  y += 6;
+
+  categories.forEach(cat=>{
+    const criteriaOfCat = recS1.aggregate.criteria.filter(cr=>cr.section===cat).map(cr=>cr.text);
+    const valuesS1 = criteriaOfCat.map(text => recS1.aggregate.criteria.find(cr=>cr.text===text).avg);
+    const valuesS2 = criteriaOfCat.map(text => recS2.aggregate.criteria.find(cr=>cr.text===text).avg);
+
+    const offCanvas = document.createElement('canvas');
+    offCanvas.style.width = '600px';
+    offCanvas.style.position = 'absolute';
+    offCanvas.style.left = '-9999px';
+    document.body.appendChild(offCanvas);
+    drawCategoryBarChart(offCanvas, criteriaOfCat, valuesS1, valuesS2);
+
+    try{
+      const imgData = offCanvas.toDataURL('image/png');
+      const imgW = contentWidth;
+      const imgH = imgW * 0.25;
+      ensureSpace(imgH + 14);
+      doc.setFont('helvetica','bold'); doc.setFontSize(9.5); doc.setTextColor(NAVY[0],NAVY[1],NAVY[2]);
+      doc.text(cat, marginX, y);
+      y += 4;
+      doc.addImage(imgData, 'PNG', marginX, y, imgW, imgH);
+      y += imgH + 8;
+    } catch(e){ /* image indisponible */ }
+    document.body.removeChild(offCanvas);
+  });
+
+  ensureSpace(16);
+  doc.setFont('helvetica','bold'); doc.setFontSize(12); doc.setTextColor(NAVY[0],NAVY[1],NAVY[2]);
+  doc.text('Moyennes par catégorie', marginX, y);
+  const rows = categories.map(cat=>[cat, catAvgS1[cat].toFixed(1)+'/5', catAvgS2[cat].toFixed(1)+'/5']);
+  doc.autoTable({
+    head:[['Catégorie','Semestre 1','Semestre 2']],
+    body: rows,
+    startY: y+4,
+    theme:'grid',
+    margin:{left:marginX, right:marginX},
+    styles:{font:'helvetica', fontSize:9, textColor:[26,26,46], cellPadding:4, lineColor:[224,224,224], lineWidth:0.15},
+    headStyles:{fillColor:[247,247,247], textColor:NAVY, fontStyle:'bold', fontSize:8.5}
+  });
+  y = doc.lastAutoTable.finalY + 12;
+
+  doc.save('bilan-annuel-enquete-' + c.id + '.pdf');
 }
 
 function renderStats(){
@@ -2518,7 +3123,7 @@ function buildBilanCompetencesPDF(c, s, sem){
   const ROSE = [232,25,75];
   const ORANGE = [244,137,74];
   const GREEN = [28,138,90];
-  const GOLD = [184,134,11];
+  const GOLD = [41,169,224];
   const MASTERY_COLOR = {na:ROSE, eca:ORANGE, partiel:GOLD, acquis:[28,43,74], maitrise:GREEN};
   const POSTURE_COLOR = {TI:ROSE, I:ORANGE, S:[28,43,74], TS:GREEN};
 
