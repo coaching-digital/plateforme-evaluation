@@ -8,6 +8,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
   :root{
     --navy:#0D1F3C;
@@ -19,6 +20,7 @@
     --ink:#1a1a2e;
     --line: rgba(13,31,60,0.10);
     --green:#1c8a5a;
+    --gold:#B8860B;
   }
   *{box-sizing:border-box;}
   body{margin:0;background:var(--cream);color:var(--ink);font-family:'Manrope', sans-serif;min-height:100vh;}
@@ -45,6 +47,7 @@
   .btn-primary{background:var(--navy);color:white;}
   .btn-primary:hover{background:var(--navy-2);}
   .btn-outline{background:white;color:var(--navy);border:1.5px solid var(--line);}
+  .btn:disabled{opacity:0.45;cursor:not-allowed;}
   .btn-tint-orange{background:rgba(244,137,74,0.08);color:var(--orange);border:1.5px solid rgba(244,137,74,0.3);}
   .btn-tint-orange:hover{background:rgba(244,137,74,0.15);border-color:var(--orange);}
   .btn-outline:hover{border-color:var(--navy);}
@@ -161,6 +164,7 @@
   .mastery-badge{font-size:11px;font-weight:700;padding:4px 10px;border-radius:7px;white-space:nowrap;}
   .mastery-badge.na{background:rgba(232,25,75,0.10);color:var(--rose-2);}
   .mastery-badge.eca{background:rgba(244,137,74,0.12);color:var(--orange);}
+  .mastery-badge.partiel{background:rgba(184,134,11,0.12);color:var(--gold);}
   .mastery-badge.acquis{background:rgba(13,31,60,0.08);color:var(--navy-2);}
   .mastery-badge.maitrise{background:rgba(28,138,90,0.12);color:var(--green);}
   .mastery-theme-title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:0.04em;color:var(--orange);margin:16px 0 8px;font-family:'Sora',sans-serif;}
@@ -169,6 +173,20 @@
   .mastery-crit-row{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 10px;background:var(--cream);border-radius:8px;margin-bottom:6px;font-size:12.5px;color:var(--ink);}
   .bilan-comment-box textarea{width:100%;min-height:100px;padding:12px 14px;border:1.5px solid var(--line);border-radius:12px;font-family:'Manrope',sans-serif;font-size:13.5px;background:var(--cream);resize:vertical;}
   .bilan-comment-box textarea:focus{outline:none;border-color:var(--orange);}
+  .pedago-mini-row{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;}
+  .pedago-mini-badge{font-size:11px;font-weight:700;padding:4px 9px;border-radius:7px;}
+  .pedago-mini-badge.todo{background:rgba(244,137,74,0.10);color:var(--orange);}
+  .pedago-mini-badge.done{background:rgba(28,138,90,0.10);color:var(--green);}
+  .pedago-card{background:white;border:1.5px solid var(--line);border-radius:12px;padding:16px;cursor:pointer;transition:border-color .15s ease;}
+  .pedago-card:hover{border-color:var(--navy);}
+  .pedago-card.active{border-color:var(--rose-2);background:rgba(232,25,75,0.03);}
+  .pedago-card-title{font-family:'Sora',sans-serif;font-weight:700;font-size:14px;color:var(--navy);text-align:center;}
+  .pedago-table-scroll{overflow-x:auto;max-width:100%;}
+  .pedago-table{border-collapse:collapse;font-size:12.5px;white-space:nowrap;}
+  .pedago-table th, .pedago-table td{padding:9px 12px;border-bottom:1px solid var(--line);text-align:left;}
+  .pedago-table th{font-family:'Sora',sans-serif;font-size:10.5px;text-transform:uppercase;letter-spacing:0.02em;color:#8a8fa3;background:var(--cream);position:sticky;top:0;}
+  .pedago-table td.student-col, .pedago-table th.student-col{position:sticky;left:0;background:white;z-index:1;font-weight:700;color:var(--navy);}
+  .pedago-table th.student-col{background:var(--cream);z-index:2;}
   .filter-pill-row{display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;}
   .eval-menu-btn{width:100%;padding:16px;margin-bottom:10px;}
   .btn-rose-active{background:rgba(232,25,75,0.07) !important;color:var(--rose-2) !important;border-color:rgba(232,25,75,0.2) !important;}
@@ -303,16 +321,83 @@
       <div class="section-label">Vue d'ensemble de la promo</div>
       <div class="stats-overview" id="statsOverview"></div>
       <div class="highlight-row" id="highlightRow"></div>
-      <div class="highlight-row" id="bulletinOpenRow">
-        <button class="btn btn-outline" data-sem="s1" style="width:100%;padding:16px;" onclick="openBulletinSemester('s1')">Accéder au bulletin du semestre 1</button>
-        <button class="btn btn-outline" data-sem="s2" style="width:100%;padding:16px;" onclick="openBulletinSemester('s2')">Accéder au bulletin du semestre 2</button>
-      </div>
-      <div class="bulletin-section hidden" id="bulletinSection">
-        <div class="bulletin-header-row">
-          <div class="bulletin-title" id="bulletinTitleText">Bulletin</div>
-          <button class="btn btn-outline btn-sm export-pdf-btn" onclick="exportBulletinPDF()">Exporter en PDF</button>
+
+      <button class="btn btn-outline eval-menu-btn" id="btn-pedagoSemBlock-s1" data-sem="s1" onclick="togglePedagoSemester('s1')">Bilans semestre 1</button>
+      <div class="theme-accordion hidden" id="pedagoSemBlock-s1">
+        <div class="section-label" style="margin-bottom:14px;">Bilans pédagogiques et compétences du semestre 1</div>
+
+        <div class="category-block">
+          <div class="category-head category-head-clickable" onclick="togglePedagoSub('s1','bulletin')">
+            <div>
+              <div class="competence-title">Bulletin de classe semestre 1</div>
+              <div class="pedago-mini-row" id="pedagoBulletinStats-s1"></div>
+            </div>
+            <div class="category-chevron" id="pedagoChevron-s1-bulletin">›</div>
+          </div>
+          <div class="eval-items-container hidden" id="pedagoBulletinBody-s1">
+            <div class="bulletin-header-row">
+              <div class="bulletin-title">Bulletin — Semestre 1</div>
+              <button class="btn btn-outline btn-sm export-pdf-btn" onclick="exportBulletinPDF('s1')">Exporter en PDF</button>
+            </div>
+            <div class="table-scroll"><table id="statsTable-s1"></table></div>
+          </div>
         </div>
-        <div class="table-scroll"><table id="statsTable"></table></div>
+
+        <div class="category-block">
+          <div class="category-head category-head-clickable" onclick="togglePedagoSub('s1','competences')">
+            <div>
+              <div class="competence-title">Bilans pédagogiques semestre 1</div>
+              <div class="pedago-mini-row" id="pedagoCompStats-s1"></div>
+            </div>
+            <div class="category-chevron" id="pedagoChevron-s1-competences">›</div>
+          </div>
+          <div class="eval-items-container hidden" id="pedagoCompBody-s1">
+            <div class="bulletin-header-row">
+              <div class="bulletin-title">Bilans de compétences — Semestre 1</div>
+              <button class="btn btn-outline btn-sm export-pdf-btn" id="pedagoZipBtn-s1" onclick="exportAllBilansZip('s1')">Exporter tous les bilans (ZIP)</button>
+            </div>
+            <div class="pedago-table-scroll"><table class="pedago-table" id="pedagoTable-s1"></table></div>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn btn-outline eval-menu-btn" id="btn-pedagoSemBlock-s2" data-sem="s2" onclick="togglePedagoSemester('s2')">Bilans semestre 2</button>
+      <div class="theme-accordion hidden" id="pedagoSemBlock-s2">
+        <div class="section-label" style="margin-bottom:14px;">Bilans pédagogiques et compétences du semestre 2</div>
+
+        <div class="category-block">
+          <div class="category-head category-head-clickable" onclick="togglePedagoSub('s2','bulletin')">
+            <div>
+              <div class="competence-title">Bulletin de classe semestre 2</div>
+              <div class="pedago-mini-row" id="pedagoBulletinStats-s2"></div>
+            </div>
+            <div class="category-chevron" id="pedagoChevron-s2-bulletin">›</div>
+          </div>
+          <div class="eval-items-container hidden" id="pedagoBulletinBody-s2">
+            <div class="bulletin-header-row">
+              <div class="bulletin-title">Bulletin — Semestre 2</div>
+              <button class="btn btn-outline btn-sm export-pdf-btn" onclick="exportBulletinPDF('s2')">Exporter en PDF</button>
+            </div>
+            <div class="table-scroll"><table id="statsTable-s2"></table></div>
+          </div>
+        </div>
+
+        <div class="category-block">
+          <div class="category-head category-head-clickable" onclick="togglePedagoSub('s2','competences')">
+            <div>
+              <div class="competence-title">Bilans pédagogiques semestre 2</div>
+              <div class="pedago-mini-row" id="pedagoCompStats-s2"></div>
+            </div>
+            <div class="category-chevron" id="pedagoChevron-s2-competences">›</div>
+          </div>
+          <div class="eval-items-container hidden" id="pedagoCompBody-s2">
+            <div class="bulletin-header-row">
+              <div class="bulletin-title">Bilans de compétences — Semestre 2</div>
+              <button class="btn btn-outline btn-sm export-pdf-btn" id="pedagoZipBtn-s2" onclick="exportAllBilansZip('s2')">Exporter tous les bilans (ZIP)</button>
+            </div>
+            <div class="pedago-table-scroll"><table class="pedago-table" id="pedagoTable-s2"></table></div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -573,7 +658,8 @@ function getActiveCompetences(c){
     .filter(cp=>activeThemes.includes(cp.themeId));
 }
 
-let currentBulletinSemesterFilter = null;
+let expandedPedagoSemester = new Set();
+let expandedPedagoSub = new Set();
 
 // Semestres fixés une fois pour toutes, valables chaque année scolaire, pour toutes les classes :
 // Semestre 1 : du 1er septembre au 31 janvier — Semestre 2 : du 1er février au 30 juin
@@ -660,9 +746,9 @@ function switchTab(tab){
   document.getElementById('tabStudents').classList.toggle('hidden', tab!=='students');
   document.getElementById('tabParams').classList.toggle('hidden', tab!=='params');
   if(tab==='stats'){
-    document.getElementById('bulletinSection').classList.add('hidden');
-    currentBulletinSemesterFilter = null;
-    updateBulletinOpenButtons();
+    expandedPedagoSemester.clear();
+    expandedPedagoSub.clear();
+    renderPedagoBlocks();
   }
 }
 
@@ -1227,6 +1313,11 @@ function closeStudentDetailModal(){
   document.getElementById('studentDetailModalOverlay').classList.add('hidden');
 }
 
+// ---------- Signature formatrice (bas du PDF de bilan) ----------
+const FORMATRICE_NOM = "Pauline LE GOFFE";
+const FORMATRICE_TITRE = "Formatrice"; // ex : "Formatrice Communication & Marketing digital" — à personnaliser
+const SIGNATURE_IMAGE_BASE64 = null; // remplace par 'data:image/png;base64,....' pour intégrer une vraie image de signature
+
 const SEMESTER_LABELS = {
   s1: {name:'Semestre 1', interval:'Du 1er septembre au 31 janvier'},
   s2: {name:'Semestre 2', interval:'Du 1er février au 30 juin'}
@@ -1251,17 +1342,37 @@ const POSTURE_LEVELS = [
 
 const POSTURE_COEF = 2;
 
-// ---------- Niveaux de maîtrise des critères de performance ----------
+// Correspondance visuelle avec les pastilles de niveau de maîtrise (mêmes couleurs, même logique de gravité)
+const POSTURE_TO_MASTERY_STYLE = { TI:'na', I:'eca', S:'acquis', TS:'maitrise' };
+
+// ---------- Niveaux de mention des critères de performance ----------
+// Barème "note" (sur 20) — utilisé pour la mention d'UN critère, à partir de la moyenne de ses évaluations.
 const MASTERY_LEVELS = [
-  {id:'na', label:'Non acquis', min:0, max:8, color:'var(--rose-2)'},
-  {id:'eca', label:"En cours d'acquisition", min:8, max:12, color:'var(--orange)'},
-  {id:'acquis', label:'Acquis', min:12, max:16, color:'var(--navy-2)'},
-  {id:'maitrise', label:'Maîtrisé', min:16, max:20.01, color:'var(--green)'}
+  {id:'na', label:'Non acquis', min:0, max:6, color:'var(--rose-2)'},
+  {id:'eca', label:"En cours d'acquisition", min:6, max:10, color:'var(--orange)'},
+  {id:'partiel', label:'Partiellement acquis', min:10, max:14, color:'var(--gold)'},
+  {id:'acquis', label:'Acquis', min:14, max:18, color:'var(--navy-2)'},
+  {id:'maitrise', label:'Maîtrisé', min:18, max:20.01, color:'var(--green)'}
 ];
 
 function getMasteryLevel(avg){
   if(avg===null || avg===undefined) return null;
   return MASTERY_LEVELS.find(l=>avg>=l.min && avg<l.max) || MASTERY_LEVELS[MASTERY_LEVELS.length-1];
+}
+
+// Barème "pourcentage" — utilisé pour la mention d'UNE COMPÉTENCE, à partir du % moyen de maîtrise de ses
+// critères déjà évalués (chaque critère compte pour un, peu importe le nombre d'évaluations qui le nourrissent).
+const MASTERY_LEVELS_PERCENT = [
+  {id:'na', label:'Non acquis', min:0, max:30, color:'var(--rose-2)'},
+  {id:'eca', label:"En cours d'acquisition", min:30, max:50, color:'var(--orange)'},
+  {id:'partiel', label:'Partiellement acquis', min:50, max:70, color:'var(--gold)'},
+  {id:'acquis', label:'Acquis', min:70, max:80, color:'var(--navy-2)'},
+  {id:'maitrise', label:'Maîtrisé', min:80, max:100.01, color:'var(--green)'}
+];
+
+function getMasteryLevelByPercent(pct){
+  if(pct===null || pct===undefined) return null;
+  return MASTERY_LEVELS_PERCENT.find(l=>pct>=l.min && pct<l.max) || MASTERY_LEVELS_PERCENT[MASTERY_LEVELS_PERCENT.length-1];
 }
 
 // Une évaluation ne peut cocher que des critères de SA PROPRE compétence (ev.criteriaIds). Pour les évaluations
@@ -1294,24 +1405,44 @@ function computeCriteresMastery(c, studentId, sem){
   return results;
 }
 
+// Mention d'une compétence = pourcentage moyen de maîtrise de ses critères déjà évalués (moyenne du critère
+// convertie en %, chaque critère compte pour un), reclassé sur le barème pourcentage ci-dessus. C'est volontairement
+// différent d'une simple moyenne des notes des évaluations : un critère jamais évalué ne pénalise/n'avantage pas,
+// et un critère nourri par une seule évaluation compte autant qu'un critère nourri par cinq.
+function computeCompetencesMentions(mastery){
+  const byComp = {};
+  mastery.forEach(m=>{
+    if(!byComp[m.competenceId]){
+      byComp[m.competenceId] = { themeId:m.themeId, themeNom:m.themeNom, competenceId:m.competenceId, competenceNom:m.competenceNom, grades:[] };
+    }
+    if(m.avg!==null && m.avg!==undefined) byComp[m.competenceId].grades.push(m.avg);
+  });
+  return Object.values(byComp).map(comp=>{
+    const pct = comp.grades.length ? (comp.grades.reduce((a,b)=>a+b,0)/comp.grades.length) / 20 * 100 : null;
+    return { themeId:comp.themeId, themeNom:comp.themeNom, competenceId:comp.competenceId, competenceNom:comp.competenceNom, pct, level: getMasteryLevelByPercent(pct) };
+  });
+}
+
 // ---------- Bilan semestriel de compétences (commentaire + validation, rédigé par la formatrice) ----------
 // Une fois validé, le bilan est figé : la moyenne et les niveaux de maîtrise affichés/exportés sont
 // ceux de l'instant de la validation (snapshot), pas recalculés en direct — même si des compétences
 // ou critères sont désactivés par la suite. Seul un nouveau clic sur "Valider" rafraîchit le snapshot.
 function getBilanRecord(c, studentId, sem){
-  return (c.bilans && c.bilans[studentId] && c.bilans[studentId][sem]) || {text:'', validated:false, validatedAt:null, avgSnapshot:null, masterySnapshot:null};
+  return (c.bilans && c.bilans[studentId] && c.bilans[studentId][sem]) || {text:'', validated:false, validatedAt:null, avgSnapshot:null, masterySnapshot:null, competenceMentionsSnapshot:null, postureSnapshot:null};
 }
 
 function saveBilanRecord(c, studentId, sem, text, validate){
   if(!c.bilans) c.bilans = {};
   if(!c.bilans[studentId]) c.bilans[studentId] = {};
-  const prev = c.bilans[studentId][sem] || {text:'', validated:false, validatedAt:null, avgSnapshot:null, masterySnapshot:null};
+  const prev = c.bilans[studentId][sem] || {text:'', validated:false, validatedAt:null, avgSnapshot:null, masterySnapshot:null, competenceMentionsSnapshot:null, postureSnapshot:null};
   const next = {
     text: text,
     validated: validate ? true : prev.validated,
     validatedAt: validate ? new Date().toISOString() : prev.validatedAt,
     avgSnapshot: prev.avgSnapshot,
-    masterySnapshot: prev.masterySnapshot
+    masterySnapshot: prev.masterySnapshot,
+    competenceMentionsSnapshot: prev.competenceMentionsSnapshot,
+    postureSnapshot: prev.postureSnapshot
   };
   if(validate){
     const s = c.students.find(x=>x.id===studentId);
@@ -1319,6 +1450,9 @@ function saveBilanRecord(c, studentId, sem, text, validate){
     const completed = items.filter(it=>it.grade!==null && it.grade!==undefined);
     next.avgSnapshot = completed.length ? weightedAverage(completed.map(it=>({grade:it.grade, coef:it.coef}))) : null;
     next.masterySnapshot = computeCriteresMastery(c, studentId, sem);
+    next.competenceMentionsSnapshot = computeCompetencesMentions(next.masterySnapshot);
+    const posture = getPosturePro(c, studentId, sem);
+    next.postureSnapshot = { note: computePostureNote(posture.criteria), criteria: {...posture.criteria} };
   }
   c.bilans[studentId][sem] = next;
 }
@@ -1346,9 +1480,8 @@ function computeStudentAveragesForEvals(c, evals){
   }).filter(x => x.count > 0);
 }
 
-function exportBulletinPDF(){
+function exportBulletinPDF(sem){
   const c = CLASSES.find(x=>x.id===currentClassId);
-  const sem = currentBulletinSemesterFilter;
   if(!sem) return;
   const { jsPDF } = window.jspdf;
 
@@ -1438,29 +1571,44 @@ function exportBulletinPDF(){
   doc.save('bulletin-' + safeClassName + '-' + sem + '.pdf');
 }
 
-function openBulletinSemester(sem){
-  currentBulletinSemesterFilter = sem;
-  document.getElementById('bulletinSection').classList.remove('hidden');
-  document.getElementById('bulletinTitleText').textContent = 'Bulletin — ' + SEMESTER_LABELS[sem].name;
-  renderBulletinTable();
-  updateBulletinOpenButtons();
+function togglePedagoSemester(sem){
+  const block = document.getElementById('pedagoSemBlock-' + sem);
+  const btn = document.getElementById('btn-pedagoSemBlock-' + sem);
+  const isOpenNow = block.classList.toggle('hidden') === false;
+  if(btn){
+    btn.classList.toggle('btn-outline', !isOpenNow);
+    btn.classList.toggle('btn-rose-active', isOpenNow);
+  }
+  if(isOpenNow){
+    if(expandedPedagoSemester.has(sem)) expandedPedagoSemester.delete(sem); // safety, shouldn't happen
+    expandedPedagoSemester.add(sem);
+    renderPedagoMiniStats(sem);
+  } else {
+    expandedPedagoSemester.delete(sem);
+  }
 }
 
-function updateBulletinOpenButtons(){
-  const container = document.getElementById('bulletinOpenRow');
-  if(!container) return;
-  container.querySelectorAll('button').forEach(btn=>{
-    const isActive = btn.dataset.sem === currentBulletinSemesterFilter;
-    btn.classList.toggle('btn-primary', isActive);
-    btn.classList.toggle('btn-outline', !isActive);
-  });
+function togglePedagoSub(sem, kind){
+  const bodyId = kind === 'bulletin' ? 'pedagoBulletinBody-' + sem : 'pedagoCompBody-' + sem;
+  const chevron = document.getElementById('pedagoChevron-' + sem + '-' + kind);
+  const body = document.getElementById(bodyId);
+  const isOpenNow = body.classList.toggle('hidden') === false;
+  if(chevron) chevron.classList.toggle('expanded', isOpenNow);
+  const key = sem + ':' + kind;
+  if(isOpenNow){
+    expandedPedagoSub.add(key);
+    if(kind === 'bulletin') renderBulletinTableInto(sem);
+    else renderPedagoTableInto(sem);
+  } else {
+    expandedPedagoSub.delete(key);
+  }
 }
 
-function renderBulletinTable(){
+function renderBulletinTableInto(sem){
   const c = CLASSES.find(x=>x.id===currentClassId);
-  const table = document.getElementById('statsTable');
-  if(!currentBulletinSemesterFilter){ table.innerHTML = ''; return; }
-  const evalsToShow = c.evaluations.filter(ev => getEvalSemester(c, ev) === currentBulletinSemesterFilter);
+  const table = document.getElementById('statsTable-' + sem);
+  if(!table) return;
+  const evalsToShow = c.evaluations.filter(ev => getEvalSemester(c, ev) === sem);
 
   if(evalsToShow.length === 0){
     table.innerHTML = '<tbody><tr><td style="padding:16px;color:#8a8fa3;font-size:13px;">Aucune évaluation datée dans ce semestre pour l\'instant.</td></tr></tbody>';
@@ -1490,11 +1638,113 @@ function renderBulletinTable(){
   table.innerHTML = thead + tbody;
 }
 
+// ---------- Mini-statistiques affichées sous le titre de chaque sous-bulle ----------
+function getClassBulletinBuckets(c, sem){
+  let high = 0, mid = 0, low = 0;
+  c.students.forEach(s=>{
+    const items = getStudentSemesterItems(c, s, sem);
+    const completed = items.filter(it=>it.grade!==null && it.grade!==undefined);
+    if(completed.length===0) return;
+    const avg = weightedAverage(completed.map(it=>({grade:it.grade, coef:it.coef})));
+    if(avg===null || avg===undefined) return;
+    if(avg >= 15) high++;
+    else if(avg >= 10) mid++;
+    else low++;
+  });
+  return { high, mid, low };
+}
+
+function getClassCompetenceExtremes(c, sem){
+  const activeComps = getActiveCompetences(c);
+  let maitrise = 0, nonAcquis = 0;
+  c.students.forEach(s=>{
+    const mentions = getStudentCompetenceMentionsForSemester(c, s.id, sem);
+    mentions.forEach(m=>{
+      if(!m.level) return;
+      if(m.level.id === 'maitrise') maitrise++;
+      else if(m.level.id === 'na') nonAcquis++;
+    });
+  });
+  return { maitrise, nonAcquis };
+}
+
+function renderPedagoMiniStats(sem){
+  const c = CLASSES.find(x=>x.id===currentClassId);
+  const buckets = getClassBulletinBuckets(c, sem);
+  const bulletinEl = document.getElementById('pedagoBulletinStats-' + sem);
+  if(bulletinEl){
+    bulletinEl.innerHTML = `
+      <span class="pedago-mini-badge done">${buckets.high} ≥ 15/20</span>
+      <span class="pedago-mini-badge" style="background:rgba(244,137,74,0.10);color:var(--orange);">${buckets.mid} entre 10 et 15/20</span>
+      <span class="pedago-mini-badge todo" style="background:rgba(232,25,75,0.10);color:var(--rose-2);">${buckets.low} en dessous de 10/20</span>
+    `;
+  }
+
+  const extremes = getClassCompetenceExtremes(c, sem);
+  const progress = getBilanProgress(c, sem);
+  const compEl = document.getElementById('pedagoCompStats-' + sem);
+  if(compEl){
+    compEl.innerHTML = `
+      <span class="pedago-mini-badge done">${extremes.maitrise} mention(s) Maîtrisé</span>
+      <span class="pedago-mini-badge" style="background:rgba(232,25,75,0.10);color:var(--rose-2);">${extremes.nonAcquis} mention(s) Non acquis</span>
+      <span class="pedago-mini-badge" style="background:rgba(13,31,60,0.06);color:var(--navy-2);">${progress.validated}/${progress.total} bilan(s) validé(s)</span>
+    `;
+  }
+
+  const zipBtn = document.getElementById('pedagoZipBtn-' + sem);
+  if(zipBtn){
+    const allDone = progress.total > 0 && progress.validated === progress.total;
+    zipBtn.disabled = !allDone;
+    zipBtn.title = allDone ? '' : 'Disponible une fois que tous les bilans de ce semestre sont validés';
+  }
+}
+
+function renderPedagoTableInto(sem){
+  const c = CLASSES.find(x=>x.id===currentClassId);
+  const table = document.getElementById('pedagoTable-' + sem);
+  if(!table) return;
+  const activeComps = getActiveCompetences(c);
+
+  if(activeComps.length===0 || c.students.length===0){
+    table.innerHTML = '<tbody><tr><td style="padding:16px;color:#8a8fa3;font-size:13px;">Pas encore assez de données (compétences actives et/ou apprenants) pour afficher ce bilan.</td></tr></tbody>';
+    return;
+  }
+
+  let head = '<thead><tr><th class="student-col">Apprenant</th>';
+  activeComps.forEach(cp=>{ head += `<th>${cp.nom}</th>`; });
+  head += '<th>Bilan</th></tr></thead>';
+
+  let bodyRows = '<tbody>';
+  c.students.forEach(s=>{
+    const mentions = getStudentCompetenceMentionsForSemester(c, s.id, sem);
+    const mentionByComp = {};
+    mentions.forEach(m=>{ mentionByComp[m.competenceId] = m.level; });
+    const record = getBilanRecord(c, s.id, sem);
+    bodyRows += `<tr><td class="student-col">${s.prenom} ${s.nom}</td>`;
+    activeComps.forEach(cp=>{
+      const level = mentionByComp[cp.id];
+      bodyRows += `<td>${level ? `<span class="mastery-badge ${level.id}">${level.label}</span>` : '<span style="color:#c9ccd6;">—</span>'}</td>`;
+    });
+    bodyRows += `<td>${record.validated ? '<span class="status-tag done">Validé</span>' : '<span class="status-tag locked">À faire</span>'}</td>`;
+    bodyRows += '</tr>';
+  });
+  bodyRows += '</tbody>';
+
+  table.innerHTML = head + bodyRows;
+}
+
+function renderPedagoBlocks(){
+  ['s1','s2'].forEach(sem=>{
+    renderPedagoMiniStats(sem);
+    if(expandedPedagoSub.has(sem + ':bulletin')) renderBulletinTableInto(sem);
+    if(expandedPedagoSub.has(sem + ':competences')) renderPedagoTableInto(sem);
+  });
+}
+
 function renderStats(){
   renderStatsOverview();
   renderHighlights();
-  renderBulletinTable();
-  updateBulletinOpenButtons();
+  renderPedagoBlocks();
 }
 
 function renderStudents(){
@@ -1823,6 +2073,46 @@ function closeBilanCompetencesModal(){
   pendingBilanCompSemester = null;
 }
 
+// ---------- Bilan pédagogique de classe (vue d'ensemble par semestre) ----------
+function getBilanProgress(c, sem){
+  const total = c.students.length;
+  const validated = c.students.filter(s=>getBilanRecord(c, s.id, sem).validated).length;
+  return { total, validated, todo: total - validated };
+}
+
+function getStudentCompetenceMentionsForSemester(c, studentId, sem){
+  const record = getBilanRecord(c, studentId, sem);
+  if(record.validated && record.masterySnapshot){
+    return record.competenceMentionsSnapshot || computeCompetencesMentions(record.masterySnapshot);
+  }
+  const mastery = computeCriteresMastery(c, studentId, sem);
+  return computeCompetencesMentions(mastery);
+}
+
+async function exportAllBilansZip(sem){
+  const c = CLASSES.find(x=>x.id===currentClassId);
+  const progress = getBilanProgress(c, sem);
+  if(progress.total===0 || progress.validated < progress.total){
+    alert('Tous les bilans de ce semestre doivent être validés avant de pouvoir exporter le ZIP.');
+    return;
+  }
+  const zip = new JSZip();
+  c.students.forEach(s=>{
+    const doc = buildBilanCompetencesPDF(c, s, sem);
+    const safeName = (s.prenom + '-' + s.nom).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+    zip.file('bilan-competences-' + safeName + '-' + sem + '.pdf', doc.output('blob'));
+  });
+  const content = await zip.generateAsync({type:'blob'});
+  const url = URL.createObjectURL(content);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'bilans-competences-' + c.id + '-' + sem + '.zip';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+}
+
 function chooseBilanCompSemester(sem){
   pendingBilanCompSemester = sem;
   renderBilanCompetencesModalBody();
@@ -1848,16 +2138,20 @@ function renderBilanCompetencesModalBody(){
 
   const record = getBilanRecord(c, s.id, sem);
 
-  let avg, mastery;
+  let avg, mastery, competenceMentions;
   if(record.validated && record.masterySnapshot){
     avg = record.avgSnapshot;
     mastery = record.masterySnapshot;
+    competenceMentions = record.competenceMentionsSnapshot || computeCompetencesMentions(mastery);
   } else {
     const items = getStudentSemesterItems(c, s, sem);
     const completedItems = items.filter(it=>it.grade!==null && it.grade!==undefined);
     avg = completedItems.length ? weightedAverage(completedItems.map(it=>({grade:it.grade, coef:it.coef}))) : null;
     mastery = computeCriteresMastery(c, s.id, sem);
+    competenceMentions = computeCompetencesMentions(mastery);
   }
+  const competenceMentionById = {};
+  competenceMentions.forEach(cm=>{ competenceMentionById[cm.competenceId] = cm.level; });
 
   const masteryByTheme = {};
   mastery.forEach(m=>{
@@ -1871,7 +2165,10 @@ function renderBilanCompetencesModalBody(){
         const levelHtml = m.level ? `<span class="mastery-badge ${m.level.id}">${m.level.label}</span>` : `<span class="mastery-badge" style="background:rgba(13,31,60,0.05);color:#8a8fa3;">Pas encore évalué</span>`;
         return `<div class="mastery-crit-row"><span>${m.critereLabel}</span>${levelHtml}</div>`;
       }).join('');
-      return `<div class="mastery-comp-title">${comp.competenceNom}</div>${critRows}`;
+      const compId = comp.criteres[0] ? comp.criteres[0].competenceId : null;
+      const compLevel = compId!==null ? competenceMentionById[compId] : null;
+      const compLevelHtml = compLevel ? `<span class="mastery-badge ${compLevel.id}">${compLevel.label}</span>` : `<span class="mastery-badge" style="background:rgba(13,31,60,0.05);color:#8a8fa3;">Pas encore évalué</span>`;
+      return `<div class="mastery-comp-title">${comp.competenceNom} ${compLevelHtml}</div>${critRows}`;
     }).join('');
     return `<div class="mastery-theme-title">${theme.themeNom}</div>${compsHtml}`;
   }).join('');
@@ -1879,6 +2176,24 @@ function renderBilanCompetencesModalBody(){
   const statusHtml = record.validated
     ? `<span class="status-tag done">Validé le ${new Date(record.validatedAt).toLocaleDateString('fr-FR')} — figé</span>`
     : `<span class="status-tag locked">Non validé — aperçu en direct</span>`;
+
+  let postureNote, postureCriteria;
+  if(record.validated && record.postureSnapshot){
+    postureNote = record.postureSnapshot.note;
+    postureCriteria = record.postureSnapshot.criteria || {};
+  } else {
+    const posture = getPosturePro(c, s.id, sem);
+    postureCriteria = posture.criteria || {};
+    postureNote = computePostureNote(postureCriteria);
+  }
+  const postureHtml = POSTURE_CRITERIA.map(crit=>{
+    const levelId = postureCriteria[crit.id];
+    const level = POSTURE_LEVELS.find(l=>l.id===levelId);
+    const badgeHtml = level
+      ? `<span class="mastery-badge ${POSTURE_TO_MASTERY_STYLE[level.id]}">${level.label}</span>`
+      : `<span class="mastery-badge" style="background:rgba(13,31,60,0.05);color:#8a8fa3;">Pas encore évalué</span>`;
+    return `<div class="mastery-crit-row"><span>${crit.label}</span>${badgeHtml}</div>`;
+  }).join('');
 
   body.innerHTML = `
     <div style="margin-bottom:12px;">
@@ -1889,6 +2204,9 @@ function renderBilanCompetencesModalBody(){
 
     <div class="bulletin-title" style="margin-top:14px;">Niveaux de maîtrise par critère de performance</div>
     <div style="max-height:260px;overflow-y:auto;margin-bottom:16px;">${masteryHtml}</div>
+
+    <div class="bulletin-title">Posture professionnelle <span style="color:var(--rose-2);">— ${postureNote!==null && postureNote!==undefined ? postureNote.toFixed(1)+'/20' : '—'}</span></div>
+    <div style="max-height:220px;overflow-y:auto;margin-bottom:16px;">${postureHtml}</div>
 
     <div class="bulletin-title">Commentaire général</div>
     <div class="bilan-comment-box" style="margin-bottom:14px;">
@@ -1911,103 +2229,301 @@ function saveBilanCompetences(validate){
   if(validate) alert('Bilan validé — il devient visible par l\'apprenant tel quel, avec ton commentaire.');
 }
 
-function exportBilanCompetencesPDF(){
-  const c = CLASSES.find(x=>x.id===currentClassId);
-  const s = c.students.find(x=>x.id===pendingBilanCompStudentId);
-  const sem = pendingBilanCompSemester;
-  if(!s || !sem) return;
+function buildBilanCompetencesPDF(c, s, sem){
   const { jsPDF } = window.jspdf;
-
   const semInfo = SEMESTER_LABELS[sem];
   const record = getBilanRecord(c, s.id, sem);
 
-  let avg, mastery;
+  let avg, mastery, competenceMentions;
   if(record.validated && record.masterySnapshot){
     avg = record.avgSnapshot;
     mastery = record.masterySnapshot;
+    competenceMentions = record.competenceMentionsSnapshot || computeCompetencesMentions(mastery);
   } else {
     const items = getStudentSemesterItems(c, s, sem);
     const completedItems = items.filter(it=>it.grade!==null && it.grade!==undefined);
     avg = completedItems.length ? weightedAverage(completedItems.map(it=>({grade:it.grade, coef:it.coef}))) : null;
     mastery = computeCriteresMastery(c, s.id, sem);
+    competenceMentions = computeCompetencesMentions(mastery);
   }
 
-  const doc = new jsPDF({orientation: 'portrait'});
-  const pageWidth = doc.internal.pageSize.getWidth();
+  let postureNote, postureCriteria;
+  if(record.validated && record.postureSnapshot){
+    postureNote = record.postureSnapshot.note;
+    postureCriteria = record.postureSnapshot.criteria || {};
+  } else {
+    const posture = getPosturePro(c, s.id, sem);
+    postureCriteria = posture.criteria || {};
+    postureNote = computePostureNote(postureCriteria);
+  }
 
-  // ---- Bandeau d'en-tête ----
-  doc.setFillColor(13,31,60);
-  doc.rect(0, 0, pageWidth, 34, 'F');
+  const competenceMentionById = {};
+  competenceMentions.forEach(cm=>{ competenceMentionById[cm.competenceId] = cm.level; });
+
+  const masteryByTheme = {};
+  mastery.forEach(m=>{
+    if(!masteryByTheme[m.themeId]) masteryByTheme[m.themeId] = {themeNom:m.themeNom, byComp:{}};
+    if(!masteryByTheme[m.themeId].byComp[m.competenceId]) masteryByTheme[m.themeId].byComp[m.competenceId] = {competenceNom:m.competenceNom, criteres:[]};
+    masteryByTheme[m.themeId].byComp[m.competenceId].criteres.push(m);
+  });
+
+  const NAVY = [13,31,60];
+  const ROSE = [232,25,75];
+  const ORANGE = [244,137,74];
+  const GREEN = [28,138,90];
+  const GOLD = [184,134,11];
+  const MASTERY_COLOR = {na:ROSE, eca:ORANGE, partiel:GOLD, acquis:[28,43,74], maitrise:GREEN};
+  const POSTURE_COLOR = {TI:ROSE, I:ORANGE, S:[28,43,74], TS:GREEN};
+
+  const doc = new jsPDF({orientation:'portrait'});
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const marginX = 16;
+  const contentWidth = pageWidth - marginX*2;
+
+  // Document 100% blanc : aucun remplissage de fond, jsPDF part déjà d'une page blanche.
+  let y = 0;
+  function ensureSpace(needed){
+    if(y + needed > pageHeight - 26){
+      doc.addPage();
+      y = 20;
+    }
+  }
+
+  function drawCard(yTop, height, accentRgb){
+    doc.setDrawColor(224,224,224);
+    doc.setFillColor(255,255,255);
+    doc.roundedRect(marginX, yTop, contentWidth, height, 3, 3, 'FD');
+    if(accentRgb){
+      doc.setFillColor(accentRgb[0], accentRgb[1], accentRgb[2]);
+      doc.roundedRect(marginX, yTop, 2.4, height, 1.2, 1.2, 'F');
+    }
+  }
+
+  // ---- En-tête sobre (pas de bandeau plein) ----
+  doc.setFillColor(ROSE[0], ROSE[1], ROSE[2]);
+  doc.rect(marginX, 9, 1.8, 24, 'F');
+  const textX = marginX + 7;
+
   doc.setFont('helvetica','bold');
   doc.setFontSize(18);
-  doc.setTextColor(255,255,255);
-  doc.text('Bilan de compétences — ' + s.prenom + ' ' + s.nom, 14, 16);
-  doc.setFont('helvetica','normal');
-  doc.setFontSize(10.5);
-  doc.setTextColor(215,222,235);
-  doc.text(c.name + ' — ' + semInfo.name + ' (' + semInfo.interval + ')', 14, 24);
-  doc.text((record.validated ? 'Bilan validé le ' + new Date(record.validatedAt).toLocaleDateString('fr-FR') : 'Brouillon — bilan non validé') + ' — généré le ' + new Date().toLocaleDateString('fr-FR'), 14, 30);
+  doc.setTextColor(NAVY[0], NAVY[1], NAVY[2]);
+  doc.text('Bilan de compétences', textX, 17);
 
-  // ---- Bloc moyenne mise en avant ----
-  doc.setFillColor(251,245,239);
-  doc.roundedRect(14, 42, pageWidth - 28, 20, 3, 3, 'F');
+  doc.setFontSize(13.5);
+  doc.text(s.prenom + ' ' + s.nom, textX, 25);
+  const nameW = doc.getTextWidth(s.prenom + ' ' + s.nom);
+  doc.setTextColor(ROSE[0], ROSE[1], ROSE[2]);
+  doc.text(' — ' + c.name, textX + nameW, 25);
+
+  doc.setDrawColor(ROSE[0], ROSE[1], ROSE[2]);
+  doc.setLineWidth(0.6);
+  doc.line(textX, 28.5, pageWidth - marginX, 28.5);
+  doc.setLineWidth(0.2);
+
+  const statusText = record.validated
+    ? 'Validé le ' + new Date(record.validatedAt).toLocaleDateString('fr-FR')
+    : 'Brouillon — non validé';
+  const statusColor = record.validated ? GREEN : ORANGE;
   doc.setFont('helvetica','normal');
   doc.setFontSize(9.5);
   doc.setTextColor(120,120,120);
-  doc.text('MOYENNE GÉNÉRALE DU SEMESTRE', 20, 50);
+  doc.text(semInfo.name + ' (' + semInfo.interval + ')  ·  ', textX, 34);
+  const metaW = doc.getTextWidth(semInfo.name + ' (' + semInfo.interval + ')  ·  ');
   doc.setFont('helvetica','bold');
-  doc.setFontSize(17);
-  doc.setTextColor(avg!==null && avg>=10 ? 28 : 232, avg!==null && avg>=10 ? 138 : 25, avg!==null && avg>=10 ? 90 : 75);
-  doc.text(avg!==null ? avg.toFixed(1)+'/20' : '—', 20, 58);
+  doc.setTextColor(statusColor[0], statusColor[1], statusColor[2]);
+  doc.text(statusText, textX + metaW, 34);
 
-  // ---- Tableau des niveaux de maîtrise par critère ----
-  let y = 72;
+  y = 44;
+
+  // ---- 3 bulles statistiques (moyenne générale, posture, compétences validées) ----
+  const seenCompetences = competenceMentions.filter(cm=>cm.pct!==null && cm.pct!==undefined);
+  const validatedCompetences = seenCompetences.filter(cm=>cm.level && (cm.level.id==='acquis' || cm.level.id==='maitrise'));
+  const validatedRatioText = seenCompetences.length ? (validatedCompetences.length + '/' + seenCompetences.length) : '—';
+
+  function drawStatPill(x, yTop, w, value, label){
+    const h = 22;
+    doc.setDrawColor(240,215,222);
+    doc.setFillColor(253,242,245);
+    doc.roundedRect(x, yTop, w, h, 3, 3, 'FD');
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(15);
+    doc.setTextColor(ROSE[0], ROSE[1], ROSE[2]);
+    doc.text(value, x + 7, yTop + 12);
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(8);
+    doc.setTextColor(90,90,100);
+    const labelLines = doc.splitTextToSize(label, w - 12);
+    doc.text(labelLines, x + 7, yTop + 17.5);
+  }
+
+  const pillGap = 6;
+  const pillW = (contentWidth - pillGap*2) / 3;
+  drawStatPill(marginX, y, pillW, avg!==null ? avg.toFixed(1)+'/20' : '—', 'Moyenne générale');
+  drawStatPill(marginX + pillW + pillGap, y, pillW, postureNote!==null && postureNote!==undefined ? postureNote.toFixed(1)+'/20' : '—', 'Posture professionnelle');
+  drawStatPill(marginX + (pillW + pillGap)*2, y, pillW, validatedRatioText, 'Compétences validées');
+  y += 22 + 12;
+
+  // ---- Posture professionnelle (remontée en premier, encadré unique) ----
+  const postureRowH = 8.2;
+  const postureCardHeight = 18 + POSTURE_CRITERIA.length * postureRowH;
+  ensureSpace(postureCardHeight + 10);
+  drawCard(y, postureCardHeight, NAVY);
   doc.setFont('helvetica','bold');
-  doc.setFontSize(11.5);
-  doc.setTextColor(13,31,60);
-  doc.text('Niveaux de maîtrise par critère de performance', 14, y);
+  doc.setFontSize(12.5);
+  doc.setTextColor(NAVY[0], NAVY[1], NAVY[2]);
+  doc.text('Posture professionnelle', marginX + 9, y + 11);
+  const postureTitleW = doc.getTextWidth('Posture professionnelle');
+  doc.setTextColor(ROSE[0], ROSE[1], ROSE[2]);
+  doc.text(' — ' + (postureNote!==null && postureNote!==undefined ? postureNote.toFixed(1)+'/20' : '—'), marginX + 9 + postureTitleW, y + 11);
 
-  const masteryHead = [['Thème', 'Compétence', 'Critère de performance', 'Niveau']];
-  const masteryBody = mastery.map(m=>[m.themeNom, m.competenceNom, m.critereLabel, m.level ? m.level.label : 'Pas encore évalué']);
-  doc.autoTable({
-    head: masteryHead,
-    body: masteryBody,
-    startY: y + 4,
-    styles:{font:'helvetica', fontSize:8.5, textColor:[0,0,0], cellPadding:4, lineColor:[220,220,220], lineWidth:0.1},
-    headStyles:{fillColor:[240,240,240], textColor:[0,0,0], fontStyle:'bold'},
-    alternateRowStyles:{fillColor:[250,250,250]},
-    columnStyles:{0:{cellWidth:34}, 1:{cellWidth:46}, 3:{cellWidth:32}},
-    didParseCell: function(data){
-      if(data.section==='body' && data.column.index===3){
-        const rowMastery = mastery[data.row.index];
-        if(rowMastery && rowMastery.level){
-          const colorMap = {na:[232,25,75], eca:[244,137,74], acquis:[28,43,74], maitrise:[28,138,90]};
-          const rgb = colorMap[rowMastery.level.id];
-          if(rgb) data.cell.styles.textColor = rgb;
-          data.cell.styles.fontStyle = 'bold';
-        }
-      }
+  let ry = y + 11 + 8;
+  POSTURE_CRITERIA.forEach((crit, i)=>{
+    const levelId = postureCriteria[crit.id];
+    const level = POSTURE_LEVELS.find(l=>l.id===levelId);
+    const levelLabel = level ? level.label : 'Pas encore évalué';
+    const levelColor = level ? POSTURE_COLOR[level.id] : [150,150,150];
+
+    doc.setFont('helvetica','normal');
+    doc.setFontSize(9.5);
+    doc.setTextColor(26,26,46);
+    doc.text(crit.label, marginX + 9, ry);
+
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(9.5);
+    doc.setTextColor(levelColor[0], levelColor[1], levelColor[2]);
+    const levelW = doc.getTextWidth(levelLabel);
+    doc.text(levelLabel, marginX + contentWidth - 9 - levelW, ry);
+
+    if(i < POSTURE_CRITERIA.length - 1){
+      doc.setDrawColor(238,238,238);
+      doc.line(marginX + 9, ry + 3, marginX + contentWidth - 9, ry + 3);
     }
+    ry += postureRowH;
+  });
+  y += postureCardHeight + 10;
+
+  // ---- Compétences par thème : titre + mention, puis tableau de ses critères ----
+  Object.values(masteryByTheme).forEach(theme=>{
+    ensureSpace(14);
+    doc.setFont('helvetica','bold');
+    doc.setFontSize(9);
+    const themeLabel = theme.themeNom.toUpperCase();
+    const themeW = doc.getTextWidth(themeLabel) + 8;
+    doc.setFillColor(253,235,220);
+    doc.roundedRect(marginX, y, themeW, 7, 2, 2, 'F');
+    doc.setTextColor(200,100,40);
+    doc.text(themeLabel, marginX + 4, y + 4.8);
+    y += 12;
+
+    Object.values(theme.byComp).forEach(comp=>{
+      ensureSpace(14);
+      const compId = comp.criteres[0] ? comp.criteres[0].competenceId : null;
+      const compLevel = compId!==null ? competenceMentionById[compId] : null;
+
+      doc.setFont('helvetica','bold');
+      doc.setFontSize(12);
+      doc.setTextColor(NAVY[0], NAVY[1], NAVY[2]);
+      doc.text(comp.competenceNom, marginX, y);
+
+      if(compLevel){
+        const rgb = MASTERY_COLOR[compLevel.id] || [150,150,150];
+        doc.setFont('helvetica','bold');
+        doc.setFontSize(9);
+        const badgeLabel = compLevel.label;
+        const badgeW = doc.getTextWidth(badgeLabel) + 6;
+        doc.setFillColor(rgb[0], rgb[1], rgb[2]);
+        doc.roundedRect(marginX + contentWidth - badgeW, y - 4.2, badgeW, 6, 2, 2, 'F');
+        doc.setTextColor(255,255,255);
+        doc.text(badgeLabel, marginX + contentWidth - badgeW + 3, y);
+      }
+      y += 4;
+
+      const rows = comp.criteres.map(m=>[
+        m.critereLabel,
+        m.level ? m.level.label : 'Pas encore évalué'
+      ]);
+      doc.autoTable({
+        head: [['Critère de performance', 'Niveau']],
+        body: rows,
+        startY: y,
+        theme: 'grid',
+        margin: {left: marginX, right: marginX},
+        styles:{font:'helvetica', fontSize:9, textColor:[26,26,46], cellPadding:3.5, lineColor:[224,224,224], lineWidth:0.15},
+        headStyles:{fillColor:[247,247,247], textColor:NAVY, fontStyle:'bold', fontSize:8.5},
+        columnStyles:{1:{cellWidth:42}},
+        didParseCell: function(data){
+          if(data.section==='body' && data.column.index===1){
+            const rowMastery = comp.criteres[data.row.index];
+            if(rowMastery && rowMastery.level){
+              const rgb = MASTERY_COLOR[rowMastery.level.id];
+              if(rgb) data.cell.styles.textColor = rgb;
+              data.cell.styles.fontStyle = 'bold';
+            }
+          }
+        }
+      });
+      y = doc.lastAutoTable.finalY + 10;
+    });
   });
 
   // ---- Commentaire général ----
-  y = doc.lastAutoTable.finalY + 14;
-  if(y > 260){ doc.addPage(); y = 20; }
+  ensureSpace(16);
   doc.setFont('helvetica','bold');
-  doc.setFontSize(11.5);
-  doc.setTextColor(13,31,60);
-  doc.text('Commentaire général', 14, y);
-  y += 7;
+  doc.setFontSize(12.5);
+  doc.setTextColor(NAVY[0], NAVY[1], NAVY[2]);
+  doc.text('Commentaire général', marginX, y);
+  y += 8;
+
+  const commentText = record.text && record.text.trim() ? record.text.trim() : "Aucun commentaire rédigé pour ce semestre.";
+  const commentLines = doc.splitTextToSize(commentText, contentWidth - 18);
+  const commentBoxHeight = 12 + commentLines.length * 5;
+  ensureSpace(commentBoxHeight + 6);
+  drawCard(y, commentBoxHeight, ORANGE);
   doc.setFont('helvetica','normal');
   doc.setFontSize(10);
   doc.setTextColor(50,50,50);
-  const commentText = record.text && record.text.trim() ? record.text.trim() : "Aucun commentaire rédigé pour ce semestre.";
-  const wrapped = doc.splitTextToSize(commentText, pageWidth - 28);
-  doc.text(wrapped, 14, y);
+  doc.text(commentLines, marginX + 9, y + 9);
+  y += commentBoxHeight + 18;
 
+  // ---- Signature ----
+  ensureSpace(34);
+  doc.setDrawColor(220,220,220);
+  doc.line(marginX, y, marginX + 70, y);
+  y += 8;
+
+  if(SIGNATURE_IMAGE_BASE64){
+    try{
+      doc.addImage(SIGNATURE_IMAGE_BASE64, 'PNG', marginX, y, 45, 18);
+      y += 21;
+    } catch(e){ /* image invalide, on continue sans */ }
+  }
+
+  doc.setFont('helvetica','bold');
+  doc.setFontSize(12);
+  doc.setTextColor(NAVY[0], NAVY[1], NAVY[2]);
+  doc.text(FORMATRICE_NOM, marginX, y);
+  y += 6;
+  doc.setFont('helvetica','normal');
+  doc.setFontSize(9.5);
+  doc.setTextColor(120,120,120);
+  const referentielNom = REFERENTIELS[c.filiereId] ? REFERENTIELS[c.filiereId].nom : '';
+  doc.text(FORMATRICE_TITRE + (referentielNom ? ' — ' + referentielNom : ''), marginX, y);
+
+  return doc;
+}
+
+function exportBilanCompetencesPDF(){
+  const c = CLASSES.find(x=>x.id===currentClassId);
+  const s = c.students.find(x=>x.id===pendingBilanCompStudentId);
+  const sem = pendingBilanCompSemester;
+  if(!s || !sem) return;
+
+  const doc = buildBilanCompetencesPDF(c, s, sem);
   const safeName = (s.prenom + '-' + s.nom).toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
   doc.save('bilan-competences-' + safeName + '-' + sem + '.pdf');
 }
+
 
 function addStudent(){
   const first = document.getElementById('newStudentFirst').value.trim();
