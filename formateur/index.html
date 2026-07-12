@@ -387,7 +387,10 @@
           <div class="eval-items-container hidden" id="pedagoEvalsBody-s1">
             <div class="bulletin-header-row">
               <div class="bulletin-title">Évaluations — Semestre 1</div>
-              <button class="btn btn-outline btn-sm export-pdf-btn" onclick="exportEvalsRecapPDF('s1')">Exporter en PDF</button>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button class="btn btn-outline btn-sm export-pdf-btn" onclick="exportEvalsRecapPDF('s1')">Exporter en PDF</button>
+                <button class="btn btn-outline btn-sm export-pdf-btn" id="pedagoCheatBtn-s1" onclick="exportSemesterCheatReportPDF('s1')">Rapport d'étonnement (PDF)</button>
+              </div>
             </div>
             <div class="pedago-table-scroll"><table class="pedago-table" id="pedagoEvalsTable-s1"></table></div>
           </div>
@@ -444,7 +447,10 @@
           <div class="eval-items-container hidden" id="pedagoEvalsBody-s2">
             <div class="bulletin-header-row">
               <div class="bulletin-title">Évaluations — Semestre 2</div>
-              <button class="btn btn-outline btn-sm export-pdf-btn" onclick="exportEvalsRecapPDF('s2')">Exporter en PDF</button>
+              <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                <button class="btn btn-outline btn-sm export-pdf-btn" onclick="exportEvalsRecapPDF('s2')">Exporter en PDF</button>
+                <button class="btn btn-outline btn-sm export-pdf-btn" id="pedagoCheatBtn-s2" onclick="exportSemesterCheatReportPDF('s2')">Rapport d'étonnement (PDF)</button>
+              </div>
             </div>
             <div class="pedago-table-scroll"><table class="pedago-table" id="pedagoEvalsTable-s2"></table></div>
           </div>
@@ -1311,6 +1317,63 @@ function exportCheatReportPDF(evalId){
   doc.save('rapport-etonnement-' + safeName + '.pdf');
 }
 
+function exportSemesterCheatReportPDF(sem){
+  const c = CLASSES.find(x=>x.id===currentClassId);
+  const evalsInSem = c.evaluations.filter(ev => getEvalSemester(c, ev) === sem);
+  const rows = [];
+  evalsInSem.forEach(ev=>{
+    Object.entries(ev.cheatReports || {}).forEach(([studentId, r])=>{
+      const total = (r.onglet||0) + (r.resize||0) + (r.coller||0);
+      if(total === 0) return;
+      const s = c.students.find(x=>x.id===studentId);
+      const penalty = computeCheatPenalty(r);
+      let statusLabel = 'En attente de décision';
+      if(r.sanctionStatus === 'validated') statusLabel = 'Appliquée (' + r.originalGrade + '/20 → ' + (c.grades[studentId] ? c.grades[studentId][ev.id] : '—') + '/20)';
+      else if(r.sanctionStatus === 'dismissed') statusLabel = 'Ignorée (faux positif)';
+      rows.push([ev.nom, s ? s.prenom + ' ' + s.nom : studentId, String(r.onglet||0), String(r.resize||0), String(r.coller||0), '-' + penalty + ' pt', statusLabel]);
+    });
+  });
+
+  if(rows.length === 0){
+    alert("Aucune détection de triche enregistrée sur ce semestre pour l'instant.");
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+  const NAVY = [13,31,60], ROSE = [232,25,75];
+  const semInfo = SEMESTER_LABELS[sem];
+  const doc = new jsPDF({orientation:'landscape'});
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const marginX = 16;
+
+  doc.setFillColor(ROSE[0],ROSE[1],ROSE[2]);
+  doc.rect(marginX, 9, 1.8, 22, 'F');
+  const textX = marginX + 7;
+  doc.setFont('helvetica','bold'); doc.setFontSize(18); doc.setTextColor(NAVY[0],NAVY[1],NAVY[2]);
+  doc.text("Rapport d'étonnement — " + semInfo.name, textX, 17);
+  doc.setFontSize(13); doc.setTextColor(ROSE[0],ROSE[1],ROSE[2]);
+  doc.text(c.name, textX, 25);
+  doc.setDrawColor(ROSE[0],ROSE[1],ROSE[2]); doc.line(textX, 28.5, pageWidth-marginX, 28.5);
+
+  doc.setFont('helvetica','normal'); doc.setFontSize(9.5); doc.setTextColor(120,120,120);
+  doc.text(semInfo.interval + ' — généré le ' + new Date().toLocaleDateString('fr-FR'), textX, 34);
+
+  doc.autoTable({
+    head: [['Évaluation', 'Apprenant', "Changt d'onglet/fenêtre", 'Réduction fenêtre', 'Collage externe', 'Pénalité suggérée', 'Décision']],
+    body: rows,
+    startY: 42,
+    theme: 'grid',
+    margin:{left:marginX, right:marginX},
+    styles:{font:'helvetica', fontSize:8.5, textColor:[26,26,46], cellPadding:4, lineColor:[224,224,224], lineWidth:0.15},
+    headStyles:{fillColor:[247,247,247], textColor:NAVY, fontStyle:'bold', fontSize:8},
+    columnStyles:{2:{halign:'center'}, 3:{halign:'center'}, 4:{halign:'center'}, 5:{halign:'center'}}
+  });
+
+  const safeClassName = c.name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+  doc.save('rapport-etonnement-' + safeClassName + '-' + sem + '.pdf');
+}
+
+
 function toggleEvalEdit(evalId){
   document.getElementById('evalEditForm-' + evalId).classList.toggle('hidden');
 }
@@ -2034,10 +2097,17 @@ function renderPedagoMiniStats(sem){
   }
 
   const evalsInSem = c.evaluations.filter(ev => getEvalSemester(c, ev) === sem);
+  const semCheatCount = evalsInSem.reduce((sum, ev) => {
+    const entries = Object.values(ev.cheatReports || {});
+    return sum + entries.reduce((s2,r)=> s2 + (r.onglet||0) + (r.resize||0) + (r.coller||0), 0);
+  }, 0);
   const evalsEl = document.getElementById('pedagoEvalsStats-' + sem);
   if(evalsEl){
-    evalsEl.innerHTML = `<span class="pedago-mini-badge" style="background:rgba(13,31,60,0.06);color:var(--navy-2);">${evalsInSem.length} évaluation(s) sur ce semestre</span>`;
+    evalsEl.innerHTML = `<span class="pedago-mini-badge" style="background:rgba(13,31,60,0.06);color:var(--navy-2);">${evalsInSem.length} évaluation(s) sur ce semestre</span>`
+      + (semCheatCount>0 ? `<span class="pedago-mini-badge" style="background:rgba(232,25,75,0.10);color:var(--rose-2);">🔍 ${semCheatCount} détection(s) de triche</span>` : '');
   }
+  const cheatBtn = document.getElementById('pedagoCheatBtn-' + sem);
+  if(cheatBtn) cheatBtn.disabled = semCheatCount === 0;
 }
 
 function renderPedagoTableInto(sem){
