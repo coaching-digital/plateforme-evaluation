@@ -529,7 +529,10 @@ let CLASSES = [
       {id:"s3", prenom:"Inès", nom:"Bernard", code:""},
     ],
     evaluations:[
-      {id:"e1", competenceId:"comp1", nom:"QCM Customer Journey Mapping", active:true, coefficient:1, date:"2025-10-15", locked:true, unlockedStudentIds:[], criteriaIds:["cr1","cr2","cr5"]},
+      {id:"e1", competenceId:"comp1", nom:"QCM Customer Journey Mapping", active:true, coefficient:1, date:"2025-10-15", locked:true, unlockedStudentIds:[], criteriaIds:["cr1","cr2","cr5"],
+        // Rapport d'étonnement — alimenté depuis apprenant/index.html une fois la surveillance branchée
+        // (changement d'onglet/fenêtre + copier/coller, détectés côté interface pendant le quiz intégré).
+        cheatReports:{ s1:{ onglet:2, resize:1, coller:1, sanctionStatus:'pending', originalGrade:null, validatedAt:null } } },
       {id:"e2", competenceId:"comp1", nom:"QCM Marketing Automation", active:false, coefficient:1, date:null, locked:false, unlockedStudentIds:[], criteriaIds:["cr3","cr4","cr6"]},
       {id:"e3", competenceId:"comp7", nom:"Étude de cas prospection B2B", active:true, coefficient:2, date:"2026-03-10", locked:false, unlockedStudentIds:[], criteriaIds:["cr31","cr32","cr38"]},
     ],
@@ -801,6 +804,7 @@ let navStack = ['home'];
 let expandedCategories = new Set();
 let expandedThemes = new Set();
 let expandedAbsents = new Set();
+let expandedCheatReports = new Set();
 
 function renderHome(){
   const list = document.getElementById('classList');
@@ -1047,6 +1051,59 @@ function evalBadgesHtml(c, ev){
   return html;
 }
 
+// ---------- Rapport d'étonnement : barème de sanction en cas de triche détectée ----------
+// Rien ne s'applique jamais automatiquement : ce barème ne fait que calculer une SUGGESTION,
+// que la formatrice doit valider elle-même (bouton "Appliquer la sanction") après vérification.
+const CHEAT_PENALTY_SCALE = {
+  onglet: 2,   // points/occurrence — 1 occurrence tolérée (n-1 comptée, risque de faux positif)
+  resize: 3,   // points/occurrence — réduction de fenêtre pour afficher autre chose à l'écran
+  coller: 5    // points/occurrence — collage externe, la preuve la plus directe
+};
+
+function computeCheatPenalty(report){
+  const ongletCounted = Math.max(0, (report.onglet||0) - 1);
+  return ongletCounted * CHEAT_PENALTY_SCALE.onglet
+    + (report.resize||0) * CHEAT_PENALTY_SCALE.resize
+    + (report.coller||0) * CHEAT_PENALTY_SCALE.coller;
+}
+
+function applyCheatSanction(evalId, studentId){
+  const c = CLASSES.find(x=>x.id===currentClassId);
+  const ev = c.evaluations.find(e=>e.id===evalId);
+  const report = ev.cheatReports[studentId];
+  const rawGrade = c.grades[studentId] ? c.grades[studentId][evalId] : null;
+  if(rawGrade === null || rawGrade === undefined) return;
+  const penalty = computeCheatPenalty(report);
+  const suggested = Math.max(0, Math.round((rawGrade - penalty) * 10) / 10);
+  report.originalGrade = rawGrade;
+  report.sanctionStatus = 'validated';
+  report.validatedAt = new Date().toISOString();
+  c.grades[studentId][evalId] = suggested;
+  renderEvals();
+  renderStats();
+}
+
+function dismissCheatSanction(evalId, studentId){
+  const c = CLASSES.find(x=>x.id===currentClassId);
+  const ev = c.evaluations.find(e=>e.id===evalId);
+  ev.cheatReports[studentId].sanctionStatus = 'dismissed';
+  renderEvals();
+}
+
+function revertCheatSanction(evalId, studentId){
+  const c = CLASSES.find(x=>x.id===currentClassId);
+  const ev = c.evaluations.find(e=>e.id===evalId);
+  const report = ev.cheatReports[studentId];
+  if(report.originalGrade !== null && report.originalGrade !== undefined){
+    c.grades[studentId][evalId] = report.originalGrade;
+  }
+  report.sanctionStatus = 'pending';
+  report.originalGrade = null;
+  report.validatedAt = null;
+  renderEvals();
+  renderStats();
+}
+
 function getEvalCompletionStats(c, ev){
   const total = c.students.length;
   const absentStudents = c.students.filter(s=>{
@@ -1087,9 +1144,14 @@ function onNewEvalCompetenceChange(){
 function evalRowHtml(c, ev){
   const stats = getEvalCompletionStats(c, ev);
   const isAbsentsExpanded = expandedAbsents.has(ev.id);
+  const isCheatExpanded = expandedCheatReports.has(ev.id);
 
   const doneBadge = stats.total>0 ? `<span class="eval-badge tag-done">${stats.doneCount}/${stats.total} réalisé(s)</span>` : '';
   const absentBadge = stats.absentStudents.length>0 ? `<span class="eval-badge tag-absent pill-clickable" onclick="event.stopPropagation(); toggleAbsentsList('${ev.id}')">${stats.absentStudents.length} absent(s)</span>` : '';
+
+  const cheatEntries = Object.entries(ev.cheatReports || {});
+  const totalDetections = cheatEntries.reduce((sum,[,r])=> sum + (r.onglet||0) + (r.resize||0) + (r.coller||0), 0);
+  const cheatBadge = totalDetections>0 ? `<span class="eval-badge pill-clickable" style="background:rgba(232,25,75,0.10);color:var(--rose-2);" onclick="event.stopPropagation(); toggleCheatReport('${ev.id}')">🔍 ${totalDetections} détection(s) de triche</span>` : '';
 
   const absentsListHtml = stats.absentStudents.length ? stats.absentStudents.map(s=>{
     const isUnlocked = (ev.unlockedStudentIds||[]).includes(s.id);
@@ -1101,12 +1163,61 @@ function evalRowHtml(c, ev){
     `;
   }).join('') : '';
 
+  const cheatReportHtml = cheatEntries.length ? `
+    <div class="bulletin-title" style="margin-top:0;font-size:13px;">Rapport d'étonnement</div>
+    ${cheatEntries.map(([studentId, r])=>{
+      const s = c.students.find(x=>x.id===studentId);
+      if(!s) return '';
+      const ongletCounted = Math.max(0, (r.onglet||0) - 1);
+      const actionLines = [];
+      if(r.onglet) actionLines.push(`${r.onglet}× changement d'onglet/fenêtre (${ongletCounted} compté${ongletCounted>1?'s':''} après tolérance) = -${ongletCounted*CHEAT_PENALTY_SCALE.onglet} pt`);
+      if(r.resize) actionLines.push(`${r.resize}× réduction de fenêtre = -${r.resize*CHEAT_PENALTY_SCALE.resize} pt`);
+      if(r.coller) actionLines.push(`${r.coller}× collage externe = -${r.coller*CHEAT_PENALTY_SCALE.coller} pt`);
+      const penalty = computeCheatPenalty(r);
+      const rawGrade = r.sanctionStatus === 'validated' ? r.originalGrade : (c.grades[studentId] ? c.grades[studentId][ev.id] : null);
+      const suggested = (rawGrade!==null && rawGrade!==undefined) ? Math.max(0, Math.round((rawGrade - penalty)*10)/10) : null;
+
+      let statusHtml;
+      if(r.sanctionStatus === 'validated'){
+        statusHtml = `
+          <div style="margin-top:8px;font-size:12.5px;color:var(--green);font-weight:700;">✓ Sanction appliquée le ${new Date(r.validatedAt).toLocaleDateString('fr-FR')} — note originale ${r.originalGrade}/20 → ${c.grades[studentId][ev.id]}/20</div>
+          <button class="btn btn-outline btn-sm" style="margin-top:8px;" onclick="revertCheatSanction('${ev.id}','${studentId}')">Revenir à la note originale</button>
+        `;
+      } else if(r.sanctionStatus === 'dismissed'){
+        statusHtml = `<div style="margin-top:8px;font-size:12.5px;color:#8a8fa3;font-style:italic;">Signalement ignoré — considéré comme faux positif.</div>`;
+      } else {
+        statusHtml = `
+          <div style="margin-top:8px;padding:10px 12px;background:white;border:1px solid var(--line);border-radius:10px;font-size:12.5px;">
+            Note brute : <b>${rawGrade!==null ? rawGrade+'/20' : '—'}</b> → Pénalité suggérée : <b style="color:var(--rose-2);">-${penalty} pt</b> → Note suggérée : <b>${suggested!==null ? suggested+'/20' : '—'}</b>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:8px;flex-wrap:wrap;">
+            <button class="btn btn-primary btn-sm" onclick="applyCheatSanction('${ev.id}','${studentId}')" ${rawGrade===null?'disabled':''}>Appliquer la sanction</button>
+            <button class="btn btn-outline btn-sm" onclick="dismissCheatSanction('${ev.id}','${studentId}')">Ignorer (faux positif)</button>
+          </div>
+        `;
+      }
+
+      return `
+        <div class="absent-row" style="align-items:flex-start;flex-direction:column;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;width:100%;gap:10px;">
+            <div>
+              <div style="font-weight:700;color:var(--navy);">${s.prenom} ${s.nom}</div>
+              <div style="font-size:12.5px;color:#5c6178;margin-top:3px;">${actionLines.join(' · ')}</div>
+            </div>
+          </div>
+          ${statusHtml}
+        </div>
+      `;
+    }).join('')}
+    <button class="btn btn-outline btn-sm" style="margin-top:10px;" onclick="exportCheatReportPDF('${ev.id}')">Exporter le rapport (PDF)</button>
+  ` : '';
+
   return `
     <div class="eval-row" style="flex-direction:column;align-items:stretch;">
       <div style="display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;">
         <div class="eval-info">
           <div class="nom">${ev.nom}</div>
-          <div style="margin-top:4px;">${evalBadgesHtml(c, ev)}${doneBadge}${absentBadge}</div>
+          <div style="margin-top:4px;">${evalBadgesHtml(c, ev)}${doneBadge}${absentBadge}${cheatBadge}</div>
           <div style="margin-top:6px;font-size:12.5px;color:#8a8fa3;">Moyenne de la classe : <b style="color:var(--navy);">${stats.classAvg!==null ? stats.classAvg.toFixed(1)+'/20' : '—'}</b></div>
         </div>
         <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
@@ -1133,8 +1244,71 @@ function evalRowHtml(c, ev){
         </div>
       </div>
       ${stats.absentStudents.length ? `<div class="absents-panel ${isAbsentsExpanded?'':'hidden'}" id="absents-${ev.id}">${absentsListHtml}</div>` : ''}
+      ${cheatEntries.length ? `<div class="absents-panel ${isCheatExpanded?'':'hidden'}" id="cheat-${ev.id}">${cheatReportHtml}</div>` : ''}
     </div>
   `;
+}
+
+function toggleCheatReport(evalId){
+  if(expandedCheatReports.has(evalId)) expandedCheatReports.delete(evalId);
+  else expandedCheatReports.add(evalId);
+  renderEvals();
+}
+
+function exportCheatReportPDF(evalId){
+  const c = CLASSES.find(x=>x.id===currentClassId);
+  const ev = c.evaluations.find(e=>e.id===evalId);
+  if(!ev || !ev.cheatReports) return;
+  const cheatEntries = Object.entries(ev.cheatReports);
+  if(cheatEntries.length === 0) return;
+
+  const { jsPDF } = window.jspdf;
+  const NAVY = [13,31,60], ROSE = [232,25,75];
+  const doc = new jsPDF({orientation:'portrait'});
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const marginX = 16;
+
+  doc.setFillColor(ROSE[0],ROSE[1],ROSE[2]);
+  doc.rect(marginX, 9, 1.8, 22, 'F');
+  const textX = marginX + 7;
+  doc.setFont('helvetica','bold'); doc.setFontSize(18); doc.setTextColor(NAVY[0],NAVY[1],NAVY[2]);
+  doc.text("Rapport d'étonnement", textX, 17);
+  doc.setFontSize(13); doc.setTextColor(ROSE[0],ROSE[1],ROSE[2]);
+  doc.text(ev.nom, textX, 25);
+  doc.setDrawColor(ROSE[0],ROSE[1],ROSE[2]); doc.line(textX, 28.5, pageWidth-marginX, 28.5);
+
+  doc.setFont('helvetica','normal'); doc.setFontSize(9.5); doc.setTextColor(120,120,120);
+  doc.text(c.name + (ev.date ? ' — ' + formatDateFr(ev.date) : '') + ' — généré le ' + new Date().toLocaleDateString('fr-FR'), textX, 34);
+
+  const rows = cheatEntries.map(([studentId, r])=>{
+    const s = c.students.find(x=>x.id===studentId);
+    const penalty = computeCheatPenalty(r);
+    let statusLabel = 'En attente de décision';
+    if(r.sanctionStatus === 'validated') statusLabel = 'Appliquée (' + r.originalGrade + '/20 → ' + (c.grades[studentId] ? c.grades[studentId][evalId] : '—') + '/20)';
+    else if(r.sanctionStatus === 'dismissed') statusLabel = 'Ignorée (faux positif)';
+    return [
+      s ? s.prenom + ' ' + s.nom : studentId,
+      String(r.onglet||0),
+      String(r.resize||0),
+      String(r.coller||0),
+      '-' + penalty + ' pt',
+      statusLabel
+    ];
+  });
+
+  doc.autoTable({
+    head: [['Apprenant', "Changt d'onglet/fenêtre", 'Réduction fenêtre', 'Collage externe', 'Pénalité suggérée', 'Décision']],
+    body: rows,
+    startY: 42,
+    theme: 'grid',
+    margin:{left:marginX, right:marginX},
+    styles:{font:'helvetica', fontSize:8.5, textColor:[26,26,46], cellPadding:4, lineColor:[224,224,224], lineWidth:0.15},
+    headStyles:{fillColor:[247,247,247], textColor:NAVY, fontStyle:'bold', fontSize:8},
+    columnStyles:{1:{halign:'center'}, 2:{halign:'center'}, 3:{halign:'center'}, 4:{halign:'center'}}
+  });
+
+  const safeName = ev.nom.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/(^-|-$)/g,'');
+  doc.save('rapport-etonnement-' + safeName + '.pdf');
 }
 
 function toggleEvalEdit(evalId){
